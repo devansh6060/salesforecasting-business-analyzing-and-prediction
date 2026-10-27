@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sales forecasting and business performance prediction system" />
+  <title>ForecastIQ | Sales Forecasting System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="stock.css" />
+  <link rel="stylesheet" href="luxury.css" />
+  <link rel="stylesheet" href="enhancements.css" />
+  <link rel="stylesheet" href="business.css" />
+  <link rel="stylesheet" href="auth-interactive.css" />
+  <link rel="stylesheet" href="company-workspace.css" />
+  <link rel="stylesheet" href="company-fixes.css" />
+  <link rel="stylesheet" href="indian-market.css" />
+  <link rel="stylesheet" href="dashboard-professional.css" />
+  <link rel="stylesheet" href="forecast-studio.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="chart-fallback.js"></script>
+</head>
+<body class="auth-locked">
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-atmosphere"><div class="orb orb-one"></div><div class="orb orb-two"></div></div>
+    <div class="auth-story">
+      <div class="auth-brand"><span>F</span><div>ForecastIQ<small>BUSINESS INTELLIGENCE</small></div></div>
+      <div class="story-copy"><p class="gold-kicker">PRIVATE ANALYTICS SUITE</p><h1>See tomorrow's<br><em>opportunity.</em></h1><p>Sales forecasting, market intelligence and executive reporting—crafted into one decisive workspace.</p><div class="auth-preview"><div class="preview-tabs"><button class="active" data-preview="sales">Sales pulse</button><button data-preview="forecasting">Forecast</button><button data-preview="market">Market</button></div><div class="preview-body"><div><span id="previewLabel">30-DAY REVENUE</span><strong id="previewValue">₹31.8L</strong><small id="previewChange">↑ 12.4% vs previous period</small></div><div id="previewChart" class="preview-chart"></div></div><div class="preview-footer"><span><i></i> Intelligence engine active</span><small id="previewHint">Updated from 365 sales records</small></div></div></div>
+      <div class="trust-row"><span>Explainable models</span><span>Private by design</span><span>Executive clarity</span></div>
+    </div>
+    <div class="auth-panel">
+      <div class="auth-card">
+        <p class="gold-kicker">WELCOME TO FORECASTIQ</p><h2 id="authTitle">Sign in to your account</h2><p id="authSubtitle" class="auth-subtitle">Access your private forecasting workspace.</p>
+        <form id="loginForm" class="auth-form">
+          <label>Email address<input id="loginEmail" type="email" autocomplete="email" placeholder="name@company.com" required /></label>
+          <label>Password<div class="password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required /><button type="button" class="show-pass" data-target="loginPassword">Show</button></div></label>
+          <div class="auth-options"><label class="check"><input id="rememberMe" type="checkbox" checked /> Remember me</label><button type="button" class="text-button" id="forgotBtn">Forgot password?</button></div>
+          <button class="auth-submit" type="submit">Enter dashboard <span>→</span></button>
+          <p class="auth-switch">New to ForecastIQ? <button type="button" id="showRegister">Create an account</button></p>
+        </form>
+        <form id="registerForm" class="auth-form hidden">
+          <div class="name-grid"><label>First name<input id="firstName" autocomplete="given-name" required /></label><label>Last name<input id="lastName" autocomplete="family-name" required /></label></div>
+          <label>Work email<input id="registerEmail" type="email" autocomplete="email" placeholder="name@company.com" required /></label>
+          <label>Company / college<input id="organization" placeholder="Your organization" required /></label>
+          <label>Create password<div class="password-wrap"><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Minimum 8 characters" required /><button type="button" class="show-pass" data-target="registerPassword">Show</button></div><div class="strength-track"><i id="strengthFill"></i></div><small id="strengthText" class="strength-text">Use 8+ characters with numbers and symbols</small></label>
+          <button class="auth-submit" type="submit">Create account <span>→</span></button>
+          <p class="auth-switch">Already registered? <button type="button" id="showLogin">Sign in</button></p>
+        </form>
+        <div class="demo-access"><span>QUICK DEMO</span><button id="demoLogin" type="button">Continue as Demo Executive</button></div>
+        <p id="authMessage" class="auth-message" role="alert"></p>
+      </div>
+    </div>
+  </section>
+  <aside class="sidebar">
+    <div class="brand"><span>F</span><div>ForecastIQ<small>Decision intelligence</small></div><b>PRO</b></div>
+    <p class="nav-section-label">Workspace</p>
+    <nav>
+      <button class="nav active" data-view="dashboard"><span class="nav-symbol">⌂</span><span>Overview</span></button>
+      <button class="nav" data-view="forecast"><span class="nav-symbol">↗</span><span>Forecast studio</span></button>
+      <button class="nav" data-view="data"><span class="nav-symbol">▤</span><span>Data manager</span></button>
+      <button class="nav" data-view="stocks"><span class="nav-symbol">⌁</span><span>Stock performance</span></button>
+      <button id="companyNav" class="nav company-nav hidden" data-view="businessDetail"><span class="nav-symbol">◇</span><span>Uploaded company</span></button>
+      <button class="nav" data-view="report"><span class="nav-symbol">□</span><span>Performance report</span></button>
+    </nav>
+    <div class="sidebar-note"><div class="sidebar-note-head"><span><i></i> System operational</span><b>LIVE</b></div><strong>Forecast engine</strong><small>Trend + weekly seasonality</small><div class="sidebar-meter"><i></i></div><p>Model confidence <b>87%</b></p></div>
+    <p class="sidebar-version">ForecastIQ Academic Suite · v1.0</p>
+  </aside>
+
+  <main>
+    <header class="app-header"><div class="header-copy"><div class="breadcrumb"><span>ForecastIQ</span><i>/</i><strong>Analytics workspace</strong></div><h1 id="pageTitle">Business overview</h1><div class="header-meta"><p id="pageDescription" class="page-description">Your most important sales signals and the next 30-day outlook.</p><span><i></i> Data verified</span><time id="headerDate"></time></div></div><div class="header-actions"><button id="refreshDashboardBtn" class="icon-action refresh-action" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button><button id="guideBtn" class="icon-action" title="Open guided tour" aria-label="Open guided tour">?</button><label class="upload professional-upload"><span>＋</span> Import data<input id="fileInput" type="file" accept=".csv" /></label><button id="downloadBtn" class="export-action">Export report</button><div class="account-menu"><button id="accountButton" class="account-button"><span id="accountInitials">DE</span><span><strong id="accountName">Demo Executive</strong><small id="accountOrg">ForecastIQ</small></span><i class="account-chevron">⌄</i></button><div id="accountDropdown" class="account-dropdown"><div><strong id="menuName">Demo Executive</strong><small id="menuEmail">demo@forecastiq.app</small></div><button id="logoutBtn">Sign out</button></div></div></div></header>
+
+    <section id="dashboard" class="view active">
+      <div class="journey-strip"><div class="journey-step done"><span>1</span><p><strong>Data ready</strong><small>180 records loaded</small></p></div><i></i><button class="journey-step" data-jump="forecast"><span>2</span><p><strong>Explore forecast</strong><small>Adjust model & horizon</small></p></button><i></i><button class="journey-step" data-jump="report"><span>3</span><p><strong>Take action</strong><small>Review recommendations</small></p></button></div>
+      <div class="business-switcher"><div><span class="live-business-dot"></span><p><small>ACTIVE BUSINESS</small><strong id="activeBusinessName">Aurum Lifestyle Retail</strong></p></div><label>Demo portfolio<select id="businessSelector"><option value="aurum">Aurum Lifestyle Retail</option><option value="urban">Urban Basket Grocery</option><option value="nova">Nova Consumer Electronics</option><option value="atelier">Atelier Fashion House</option></select></label><div class="business-meta"><span id="businessRegion">Mumbai • 4 stores</span><span id="businessUpdated">Updated today</span></div></div>
+      <div class="hero professional-hero">
+        <div class="hero-copy"><div class="hero-kicker"><span>EXECUTIVE COMMAND CENTER</span><b><i></i> Live analysis</b></div><h2>Make the next revenue<br/>decision with confidence.</h2><p class="sub">A focused view of performance, demand risk, and the actions most likely to move your business forward.</p><div class="hero-actions"><button id="reviewForecastBtn" class="hero-primary">Review forecast <span>→</span></button><button id="reviewReportBtn" class="hero-secondary">Open executive report</button></div><div class="hero-provenance"><span><strong id="heroRecordCount">365</strong> records analyzed</span><i></i><span>Last observation <strong id="heroLastDate">—</strong></span><i></i><span>3 models available</span></div></div>
+        <div class="confidence executive-score"><div class="score-heading"><span>DECISION READINESS</span><small id="confidenceStatus">Strong</small></div><div class="score-body"><div id="confidenceRing" class="confidence-ring" style="--score:87"><strong id="confidenceScore">87</strong><small>/100</small></div><div class="score-copy"><strong>Forecast is decision-ready</strong><p>Stable weekly patterns and sufficient history support the current outlook.</p></div></div><div class="score-factors"><div><span>Data quality</span><strong id="qualityScore">100%</strong></div><div><span>Trend stability</span><strong id="stabilityScore">High</strong></div><div><span>Coverage</span><strong id="coverageDays">365d</strong></div></div></div>
+      </div>
+      <div class="kpis">
+        <article class="kpi-card"><div class="kpi-top"><p>Total revenue</p><span class="kpi-icon revenue-icon">₹</span></div><h3 id="revenueKpi">₹0</h3><div class="kpi-foot"><span id="revenueTrend">—</span><small>Selected history</small></div></article>
+        <article class="kpi-card"><div class="kpi-top"><p>Average daily sales</p><span class="kpi-icon average-icon">≋</span></div><h3 id="avgKpi">₹0</h3><div class="kpi-foot"><span>Daily run rate</span><small>Historical period</small></div></article>
+        <article class="kpi-card featured-kpi"><div class="kpi-top"><p>Next 30 days</p><span class="kpi-icon forecast-icon">↗</span></div><h3 id="forecastKpi">₹0</h3><div class="kpi-foot"><span id="forecastTrend">Forecast</span><small>Model projection</small></div></article>
+        <article class="kpi-card"><div class="kpi-top"><p>Best category</p><span class="kpi-icon category-icon">◇</span></div><h3 id="categoryKpi">—</h3><div class="kpi-foot"><span>Portfolio leader</span><small>By revenue</small></div></article>
+      </div>
+      <div class="executive-brief-grid">
+        <article class="executive-brief"><div class="panel-head"><div><p>PRIORITY SIGNALS</p><h3>What deserves attention now</h3></div><span id="briefTimestamp" class="brief-timestamp">Updated just now</span></div><div id="executiveSignals" class="executive-signals"></div></article>
+        <aside class="next-best-action"><p class="eyebrow">NEXT BEST ACTION</p><span class="action-number">01</span><h3 id="nextActionTitle">Protect availability for peak demand</h3><p id="nextActionCopy">Use the forecast to align purchasing and working capital before the next high-demand cycle.</p><button id="nextActionBtn">Open forecast studio <span>→</span></button><small>Suggested from your latest dataset</small></aside>
+      </div>
+      <article class="scenario-card">
+        <div><p class="eyebrow">WHAT-IF PLANNER</p><h3>Test a growth scenario</h3><p>Move the slider to see how a change in demand could affect next month's revenue.</p></div>
+        <label><span>Expected demand change</span><strong id="scenarioLabel">+5%</strong><input id="scenarioSlider" type="range" min="-25" max="40" value="5" /></label>
+        <div class="scenario-result"><small>Adjusted 30-day revenue</small><strong id="scenarioRevenue">₹0</strong><span id="scenarioDifference">₹0 vs baseline</span></div>
+      </article>
+      <div class="operations-grid">
+        <article class="operations-panel"><div class="panel-head"><div><p>OPERATING PULSE</p><h3>Business health today</h3></div><span id="healthBadge" class="health-badge">Strong</span></div><div id="operatingMetrics" class="operating-metrics"></div></article>
+        <article class="operations-panel target-panel"><div class="panel-head"><div><p>MONTHLY TARGET</p><h3>Revenue goal</h3></div><strong id="targetPercent">0%</strong></div><div class="target-track"><i id="targetFill"></i></div><div class="target-copy"><span id="targetActual">₹0 achieved</span><span id="targetRemaining">₹0 remaining</span></div><p id="targetNudge">Keep building momentum.</p></article>
+        <article class="operations-panel"><div class="panel-head"><div><p>CHANNEL MIX</p><h3>Where revenue comes from</h3></div></div><div id="channelMix" class="channel-mix"></div></article>
+      </div>
+      <div class="grid two">
+        <article class="panel chart-panel"><div class="panel-head"><div><p>REVENUE TRAJECTORY</p><h3>Actual vs forecast</h3></div><span class="pill">30-day outlook</span></div><canvas id="salesChart"></canvas></article>
+        <article class="panel"><div class="panel-head"><div><p>CATEGORY MIX</p><h3>Revenue contribution</h3></div></div><canvas id="categoryChart"></canvas></article>
+      </div>
+      <div class="section-label-row"><div><p class="eyebrow">ANALYST NOTES</p><h3>Automated business interpretation</h3></div><span>Explainable, not a guarantee</span></div>
+      <div class="grid three" id="insights"></div>
+    </section>
+
+    <section id="forecast" class="view">
+      <div class="section-intro forecast-studio-header"><div><p class="eyebrow">FORECAST LABORATORY</p><h2>Forecast studio</h2><p>Turn historical patterns into a measurable demand plan for inventory, staffing and budgets.</p></div><div class="studio-header-actions"><span id="forecastStatus" class="studio-status"><i></i> Model ready</span><button id="exportForecastBtn">Export forecast</button><button id="trainBtn" class="primary">Run forecast</button></div></div>
+
+      <article class="forecast-purpose"><div class="purpose-intro"><span class="purpose-icon">◎</span><div><p class="eyebrow">PURPOSE OF THIS STUDIO</p><h3>Convert sales history into a practical plan</h3><p>Forecast Studio estimates future daily demand, tests how well each model performs on unseen historical data, and translates the result into business actions. Use it before placing inventory orders, planning production, setting targets or allocating staff.</p></div></div><div class="purpose-flow"><div><b>01</b><span><strong>Learn patterns</strong><small>Trend and weekly demand</small></span></div><i>→</i><div><b>02</b><span><strong>Predict demand</strong><small>7–90 day outlook</small></span></div><i>→</i><div><b>03</b><span><strong>Measure accuracy</strong><small>Chronological backtest</small></span></div><i>→</i><div><b>04</b><span><strong>Make decisions</strong><small>Stock, budget and capacity</small></span></div></div></article>
+
+      <div class="forecast-presets"><div><p>PLANNING PRESETS</p><span>Start with a business objective</span></div><button class="forecast-preset active" data-method="seasonal" data-horizon="30"><i>◆</i><span><strong>Balanced retail</strong><small>30 days · Seasonality</small></span></button><button class="forecast-preset" data-method="moving" data-horizon="14"><i>≋</i><span><strong>Short-term operations</strong><small>14 days · Stable baseline</small></span></button><button class="forecast-preset" data-method="linear" data-horizon="60"><i>↗</i><span><strong>Strategic growth</strong><small>60 days · Trend outlook</small></span></button></div>
+
+      <div class="forecast-workbench">
+        <article class="panel controls studio-controls"><div class="control-heading"><span>01</span><div><p>CONFIGURE MODEL</p><h3>Planning settings</h3></div></div><label>Forecast horizon <strong><span id="horizonValue">30</span> days</strong><input id="horizon" type="range" min="7" max="90" value="30" /></label><div id="quickHorizons" class="quick-horizons"><button data-horizon="7">7D</button><button data-horizon="14">14D</button><button class="active" data-horizon="30">30D</button><button data-horizon="60">60D</button><button data-horizon="90">90D</button></div><label>Forecasting method<select id="method"><option value="seasonal">Trend + weekly seasonality</option><option value="moving">Moving average</option><option value="linear">Linear regression</option></select></label><div id="methodDescription" class="method-description"></div><div class="training-window"><span>TRAINING DATA</span><strong id="trainingWindow">—</strong><small id="trainingCoverage">—</small></div></article>
+
+        <article class="panel chart-panel studio-chart"><div class="panel-head"><div><p>02 · DEMAND PROJECTION</p><h3>Historical sales and forecast</h3><small id="forecastChartSubtitle">30-day outlook using weekly seasonality</small></div><div class="chart-head-meta"><span id="modelMetric" class="pill">Ready</span><span id="forecastUpdated">Not trained</span></div></div><div class="chart-legend-note"><small>Forecast values are planning estimates, not guaranteed results</small></div><canvas id="forecastChart"></canvas></article>
+
+        <aside class="forecast-outcome"><div class="outcome-heading"><p>03 · FORECAST OUTCOME</p><span id="outcomeDirection">↗</span></div><small>Projected revenue</small><h3 id="studioForecastTotal">₹0</h3><p id="studioForecastRange">Expected planning range —</p><div class="outcome-grid"><div><span>Daily average</span><strong id="studioDailyAverage">₹0</strong></div><div><span>Peak forecast day</span><strong id="studioPeakDay">—</strong></div><div><span>Vs recent run rate</span><strong id="studioGrowth">—</strong></div><div><span>Forecast length</span><strong id="studioHorizon">30 days</strong></div></div><div class="outcome-action"><span>PLANNING INTERPRETATION</span><p id="studioRecommendation">Run the model to generate a decision summary.</p></div></aside>
+      </div>
+
+      <div class="metrics forecast-metrics" id="modelMetrics"></div>
+
+      <div class="forecast-analysis-grid">
+        <article class="panel model-comparison"><div class="panel-head"><div><p>MODEL BENCHMARK</p><h3>Compare methods on historical holdout data</h3><small>The lowest MAPE generally indicates the most reliable model for this dataset.</small></div><span id="recommendedModel" class="recommended-model">Evaluating</span></div><div class="comparison-table-wrap"><table><thead><tr><th>Method</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>Bias</th><th>Assessment</th></tr></thead><tbody id="modelComparisonRows"></tbody></table></div></article>
+        <aside class="panel accuracy-guide"><p class="eyebrow">HOW TO READ ACCURACY</p><h3 id="accuracyHeadline">Understanding forecast error</h3><div id="accuracyScore" class="accuracy-score"><strong>—</strong><span>MAPE</span></div><p id="accuracyExplanation">MAPE shows the average percentage difference between predictions and actual values during a chronological holdout test.</p><div class="accuracy-scale"><div><i></i></div><p><span>&lt;10% Excellent</span><span>10–20% Useful</span><span>&gt;20% Review</span></p></div><div class="accuracy-warning"><b>Decision-support only</b><span>Forecasts reduce uncertainty; they do not remove it. Review promotions, holidays and stock-outs before committing capital.</span></div></aside>
+      </div>
+    </section>
+
+    <section id="data" class="view">
+      <div class="section-intro"><div><p class="eyebrow">DATA PIPELINE</p><h2>Sales data manager</h2><p>Upload a CSV with date, sales and category columns, or use the included sample dataset.</p></div><button id="resetBtn">Restore sample data</button></div>
+      <article class="dropzone" id="dropzone"><strong>Drop your sales CSV here</strong><span>or choose “Upload CSV” above</span><small>Required: date, sales. Optional: category.</small></article>
+      <div class="data-summary" id="dataSummary"></div>
+      <article class="panel table-wrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Category</th><th>Data quality</th></tr></thead><tbody id="dataRows"></tbody></table></article>
+    </section>
+
+    <section id="stocks" class="view market-workspace">
+      <div class="market-topbar"><div><p class="eyebrow">INDIAN MARKET INTELLIGENCE</p><h2>Stocks & indices</h2><p>Research NSE and BSE companies with delayed market history and benchmark comparisons.</p></div><div class="market-top-actions"><button id="exportStockBtn">Export history</button><button id="stockResetBtn">Reset</button></div></div>
+      <div class="market-disclaimer"><span>i</span><p><strong>Research mode</strong> Prices may be delayed. Analysis is educational and is not investment advice.</p></div>
+      <div id="indicesStrip" class="indices-strip"><article><span>NIFTY 50</span><strong id="indexNifty">—</strong><small id="indexNiftyChange">Loading…</small></article><article><span>SENSEX</span><strong id="indexSensex">—</strong><small id="indexSensexChange">Loading…</small></article><article><span>NIFTY BANK</span><strong id="indexBank">—</strong><small id="indexBankChange">Loading…</small></article><article><span>NIFTY IT</span><strong id="indexIt">—</strong><small id="indexItChange">Loading…</small></article></div>
+      <div class="stock-finder"><div class="finder-search"><span class="search-icon">⌕</span><input id="stockSymbol" value="RELIANCE" maxlength="15" autocomplete="off" placeholder="Search Indian stocks: RELIANCE, TCS, INFY…" /><div id="stockSearchResults" class="stock-search-results"></div></div><select id="stockExchange" aria-label="Exchange"><option value="NS">NSE</option><option value="BO">BSE</option></select><select id="benchmarkSymbol" aria-label="Benchmark"><option value="^NSEI">vs NIFTY 50</option><option value="^BSESN">vs SENSEX</option><option value="^NSEBANK">vs NIFTY BANK</option><option value="^CNXIT">vs NIFTY IT</option></select><button id="fetchMarketBtn" class="primary live-fetch"><span class="live-dot"></span> Search</button></div>
+      <div class="market-watch"><span>POPULAR</span><button data-stock="RELIANCE">Reliance</button><button data-stock="TCS">TCS</button><button data-stock="INFY">Infosys</button><button data-stock="HDFCBANK">HDFC Bank</button><button data-stock="ICICIBANK">ICICI Bank</button><button data-stock="SBIN">SBI</button><button data-stock="TATAMOTORS">Tata Motors</button><button data-stock="BHARTIARTL">Bharti Airtel</button></div>
+      <article id="quoteHero" class="quote-hero demo-quote">
+        <div class="quote-identity"><span id="quoteExchange">DEMO</span><div><h3 id="quoteCompany">Reliance Industries Limited</h3><p id="quoteTicker">RELIANCE.NS • NSE</p></div></div><div class="quote-price"><small>LAST CLOSE</small><strong id="quotePrice">₹—</strong><span id="quoteChange">Select Search for market data</span></div><div class="quote-detail"><small>PREVIOUS CLOSE</small><strong id="quotePrevious">—</strong></div><div class="quote-detail"><small>DAY RANGE</small><strong id="quoteRange">—</strong></div><div class="quote-detail"><small>VOLUME</small><strong id="quoteVolume">—</strong></div><div class="market-state"><i id="marketStateDot"></i><span id="quoteMarketState">READY</span><small id="quoteTimestamp">Not connected</small></div>
+      </article>
+      <p id="marketStatus" class="market-status">Search a symbol or select a popular stock to retrieve market history.</p>
+      <div class="market-tabs"><button class="active" data-market-tab="overview">Overview</button><button data-market-tab="performance">Performance</button><button data-market-tab="history">Price history</button><button data-market-tab="upload">Upload CSV</button></div>
+      <div id="marketOverview" class="market-tab-panel active">
+        <div class="market-main-grid"><article class="panel market-chart-card"><div class="market-chart-head"><div><p>PRICE PERFORMANCE</p><h3 id="chartHeading">RELIANCE vs NIFTY 50</h3><small id="marketMeta">Demonstration data</small></div><div class="range-buttons"><button data-range="1mo">1M</button><button data-range="3mo">3M</button><button data-range="6mo">6M</button><button class="active" data-range="1y">1Y</button><button data-range="2y">2Y</button><button data-range="5y">5Y</button></div></div><input id="stockRange" type="hidden" value="1y" /><div class="stock-period-label" id="stockPeriod">—</div><canvas id="stockChart"></canvas></article><aside class="panel stock-snapshot"><div class="panel-head"><div><p>KEY STATISTICS</p><h3>Market snapshot</h3></div></div><div id="stockSnapshot" class="snapshot-grid"><div><span>52W high</span><strong>—</strong></div><div><span>52W low</span><strong>—</strong></div><div><span>From 52W high</span><strong>—</strong></div><div><span>Annual volatility</span><strong>—</strong></div></div><div class="week-range"><div><i id="weekRangeFill"></i><b id="weekRangeMarker"></b></div><p><span id="weekLow">Low —</span><span id="weekHigh">High —</span></p></div><button id="addWatchlistBtn" class="watchlist-button">☆ Add to watchlist</button></aside></div>
+        <div class="metrics stock-metrics" id="stockMetrics"></div>
+        <div class="grid market-overview-bottom"><article class="panel"><div class="panel-head"><div><p>RISK & RETURN</p><h3>What the numbers mean</h3></div><span id="riskLabel" class="pill">Awaiting data</span></div><div id="stockInsights" class="analysis-copy"></div></article><article class="panel return-card"><div class="panel-head"><div><p>HISTORICAL RETURNS</p><h3>Period comparison</h3></div></div><div id="periodReturns" class="returns-list"></div></article><article class="panel calculator-card"><div class="panel-head"><div><p>RETURN SIMULATOR</p><h3>Historical illustration</h3></div></div><label>Illustrative investment<input id="investmentAmount" type="number" min="1000" step="1000" value="10000" /></label><label>Holding period<select id="investmentYears"><option value="1">1 year</option><option value="3">3 years</option><option value="5">5 years</option></select></label><div class="calculator-result"><span>At historical CAGR</span><strong id="investmentResult">₹—</strong><small id="investmentDisclaimer">Not a future-return estimate</small></div></article></div>
+      </div>
+      <div id="marketPerformance" class="market-tab-panel"><article class="panel performance-dashboard"><div class="panel-head"><div><p>BENCHMARK ANALYSIS</p><h3>Stock performance scorecard</h3></div></div><div id="performanceScorecard" class="performance-scorecard"></div></article></div>
+      <div id="marketHistory" class="market-tab-panel"><article class="panel table-wrap"><table><thead><tr><th>Date</th><th id="stockTableHead">Stock close</th><th id="benchmarkTableHead">Benchmark</th><th>Relative index</th></tr></thead><tbody id="stockRows"></tbody></table></article></div>
+      <div id="marketUpload" class="market-tab-panel"><article class="panel upload-market-card"><div><p class="eyebrow">YOUR OWN MARKET DATA</p><h3>Upload a comparison file</h3><p>Use daily closing prices with <code>date,stock,benchmark</code> columns and at least 20 valid rows.</p></div><label class="upload stock-upload">Choose price CSV<input id="stockFileInput" type="file" accept=".csv" /></label><button id="analyzeStockBtn">Analyze uploaded data</button></article></div>
+    </section>
+
+    <section id="businessDetail" class="view company-workspace">
+      <div class="company-heading"><div><p class="eyebrow">UPLOADED BUSINESS WORKSPACE</p><div class="company-title-row"><span id="companyMonogram">EL</span><div><h2 id="companyTitle">Eternal Ltd.</h2><p id="companySubtitle">Company-specific sales intelligence</p></div></div></div><div class="company-actions"><span class="verified-data"><i></i> Dataset validated</span><button id="replaceCompanyBtn">Replace CSV</button><button id="companyReportBtn" class="primary">Open report</button></div></div>
+      <div id="companyCoverage" class="company-coverage"></div><div id="companyKpis" class="company-kpis"></div>
+      <div class="grid company-chart-grid"><article class="panel chart-panel"><div class="panel-head"><div><p>COMPANY TRAJECTORY</p><h3>Daily revenue and 30-day outlook</h3></div><span class="pill">Uploaded data</span></div><canvas id="companyTrendChart"></canvas></article><article class="panel chart-panel"><div class="panel-head"><div><p>BUSINESS PORTFOLIO</p><h3>Segment contribution</h3></div></div><canvas id="companyMixChart"></canvas></article></div>
+      <div class="grid company-bottom-grid"><article class="panel"><div class="panel-head"><div><p>EXECUTIVE READOUT</p><h3>Performance summary</h3></div></div><div id="companyFindings" class="company-findings"></div></article><article class="panel table-wrap"><table><thead><tr><th>Business segment</th><th>Revenue</th><th>Share</th><th>Records</th></tr></thead><tbody id="companySegments"></tbody></table></article></div>
+      <article class="panel table-wrap company-records"><div class="records-head"><div><p class="eyebrow">LATEST RECORDS</p><h3>Company data ledger</h3></div><span id="companyRecordCount">0 records</span></div><table><thead><tr><th>Date</th><th>Revenue</th><th>Business segment</th><th>Status</th></tr></thead><tbody id="companyRows"></tbody></table></article>
+    </section>
+
+    <section id="report" class="view">
+      <div class="section-intro"><div><p class="eyebrow">EXECUTIVE BRIEF</p><h2>Business performance report</h2><p>A concise summary generated from the active dataset and model.</p></div><button id="printBtn" class="primary">Print / Save PDF</button></div>
+      <div id="reportContent" class="report-paper"></div>
+    </section>
+  </main>
+  <div id="toast" role="status"></div>
+  <div id="tourOverlay" class="tour-overlay" aria-hidden="true"><div class="tour-card"><button id="closeTour" class="tour-close" aria-label="Close tour">×</button><p class="gold-kicker">60-SECOND TOUR</p><h2 id="tourTitle">Welcome to ForecastIQ</h2><p id="tourText">Start with your business overview, then explore forecasts and turn insights into action.</p><div class="tour-progress" id="tourProgress"></div><div class="tour-actions"><button id="tourBack">Back</button><button id="tourNext" class="primary">Next</button></div></div></div>
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
+  <script src="enhancements.js"></script>
+  <script src="market-ui.js"></script>
+  <script src="forecast-studio.js"></script>
+</body>
+</html>

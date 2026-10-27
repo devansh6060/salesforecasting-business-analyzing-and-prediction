@@ -1,0 +1,13 @@
+{
+  "name": "forecastiq-sales-forecasting",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sales forecasting, business performance prediction and Indian market intelligence dashboard.",
+  "scripts": {
+    "test:model": "node tests/model-tests.js",
+    "test:vercel": "node tests/vercel-tests.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
