@@ -1,0 +1,32 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const core = require('../core.js');
+const data = require('../samples/uci-retail.json');
+const csv = fs.readFileSync(path.join(__dirname, '../samples/uci-retail-daily.csv'), 'utf8');
+const parsed = core.parseSalesCSV(csv);
+assert.equal(data.currency, 'GBP');
+assert.equal(parsed.length, 334);
+assert.equal(parsed[0].date, '2011-01-01');
+assert.equal(parsed.at(-1).date, '2011-11-30');
+const pennies = rows => rows.reduce((total, row) => total + Math.round(row.sales * 100), 0);
+assert.equal(pennies(parsed), data.totalSalesPence);
+assert.equal(pennies(data.rows), data.totalSalesPence);
+assert.equal(pennies(data.countryTotals), data.totalSalesPence);
+assert.equal(data.totalSalesPence, 888913313);
+assert.equal(data.rows.filter(row => row.sales === 0).length, 57);
+data.rows.forEach((row, index) => assert.equal(row.date, core.addDaysISO(data.dateStart, index)));
+assert.equal(new Set(data.rows.map(row => row.date)).size, 334);
+assert.match(data.sourceSha256, /^[a-f0-9]{64}$/);
+assert.equal(data.license, 'CC BY 4.0');
+for (const method of ['seasonal', 'moving', 'linear']) {
+  const evaluation = core.evaluateForecast(data.rows, method, 30);
+  assert.equal(evaluation.calendarAligned, true);
+  assert.equal(evaluation.holdout, 30);
+  assert.equal(Number.isFinite(evaluation.mae), true);
+  assert.equal(Number.isFinite(evaluation.mape), true);
+  const forecast = core.forecast(data.rows, 30, method);
+  assert.equal(forecast[0].date, '2011-12-01');
+  assert.equal(forecast.at(-1).date, '2011-12-30');
+}
+console.log('Public dataset: source, complete calendar, zero days, exact-penny reconciliation and model checks passed.');

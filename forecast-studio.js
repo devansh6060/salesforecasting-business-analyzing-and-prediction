@@ -99,9 +99,9 @@
     const growth = recentAverage ? (dailyAverage / recentAverage - 1) * 100 : 0;
     const peak = [...projection].sort((a, b) => b.sales - a.sales)[0];
     const evaluation = ForecastIQCore.evaluateForecast(rows, selectedMethod, 30);
-    const errorRate = evaluation?.mape == null ? 12 : Math.min(35, Math.max(5, evaluation.mape));
-    const lower = total * (1 - errorRate / 100);
-    const upper = total * (1 + errorRate / 100);
+    const sensitivity = evaluation ? evaluation.mae * days : null;
+    const lower = sensitivity == null ? null : Math.max(0, total - sensitivity);
+    const upper = sensitivity == null ? null : total + sensitivity;
 
     studio.forecastTotal.textContent = money(total);
     studio.dailyAverage.textContent = money(dailyAverage);
@@ -109,13 +109,14 @@
     studio.growth.textContent = `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
     studio.growth.className = growth >= 0 ? 'positive' : 'negative';
     studio.horizon.textContent = `${days} days`;
-    studio.range.textContent = `Planning range ${money(lower)} – ${money(upper)}`;
+    studio.range.textContent = sensitivity == null ? 'More history needed to measure forecast error' : `Sensitivity: ${money(lower)} – ${money(upper)} (± daily holdout MAE; not a confidence interval)`;
     studio.recommendation.textContent = `${detail.recommendation} Projected demand is ${Math.abs(growth).toFixed(1)}% ${growth >= 0 ? 'above' : 'below'} the recent daily run rate.`;
     studio.direction.textContent = growth >= 0 ? '↗' : '↘';
     studio.direction.className = growth >= 0 ? 'positive' : 'negative';
     studio.description.innerHTML = `<strong>${detail.name}</strong><p>${detail.description}</p>`;
     studio.trainingWindow.textContent = `${rows[0].date} → ${rows.at(-1).date}`;
-    studio.trainingCoverage.textContent = `${rows.length.toLocaleString('en-IN')} validated daily records · ${new Set(rows.map(item => item.category)).size} categories`;
+    const categoryCount = new Set(rows.map(item => item.category)).size;
+    studio.trainingCoverage.textContent = `${rows.length.toLocaleString('en-IN')} validated daily records · ${categoryCount} ${categoryCount === 1 ? 'category' : 'categories'}`;
     studio.chartSubtitle.textContent = `${days}-day outlook using ${detail.short.toLowerCase()}`;
     studio.updated.textContent = 'Preview refreshed';
 

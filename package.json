@@ -4,10 +4,19 @@
   "private": true,
   "description": "Sales forecasting, business performance prediction and Indian market intelligence dashboard.",
   "scripts": {
+    "test:ui": "node tests/premium-tests.cjs",
+    "test:data": "node tests/public-data-tests.cjs",
+    "test:charts": "node scripts/render-charts.cjs",
+    "test:market": "node tests/market-state-tests.cjs",
+    "start": "node server.mjs",
     "test:model": "node tests/model-tests.js",
     "test:vercel": "node tests/vercel-tests.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.1.0",
+    "jsdom": "26.1.0"
   }
 }

@@ -16,7 +16,10 @@
   <link rel="stylesheet" href="indian-market.css" />
   <link rel="stylesheet" href="dashboard-professional.css" />
   <link rel="stylesheet" href="forecast-studio.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="premium.css" />
+  <link rel="stylesheet" href="page-polish.css" />
+  <link rel="stylesheet" href="navigation.css" />
+  <script src="vendor/chart.umd.min.js"></script>
   <script src="chart-fallback.js"></script>
 </head>
 <body class="auth-locked">
@@ -50,22 +53,17 @@
       </div>
     </div>
   </section>
-  <aside class="sidebar">
-    <div class="brand"><span>F</span><div>ForecastIQ<small>Decision intelligence</small></div><b>PRO</b></div>
-    <p class="nav-section-label">Workspace</p>
-    <nav>
+
+
+  <main>
+    <div class="workspace-bar"><a class="workspace-brand" href="#dashboard" aria-label="ForecastIQ overview"><span>F</span><strong>ForecastIQ<small>ANALYTICS WORKSPACE</small></strong></a><nav id="workspaceNavigation" class="top-option-menu" aria-label="Primary navigation">
       <button class="nav active" data-view="dashboard"><span class="nav-symbol">⌂</span><span>Overview</span></button>
       <button class="nav" data-view="forecast"><span class="nav-symbol">↗</span><span>Forecast studio</span></button>
       <button class="nav" data-view="data"><span class="nav-symbol">▤</span><span>Data manager</span></button>
       <button class="nav" data-view="stocks"><span class="nav-symbol">⌁</span><span>Stock performance</span></button>
       <button id="companyNav" class="nav company-nav hidden" data-view="businessDetail"><span class="nav-symbol">◇</span><span>Uploaded company</span></button>
       <button class="nav" data-view="report"><span class="nav-symbol">□</span><span>Performance report</span></button>
-    </nav>
-    <div class="sidebar-note"><div class="sidebar-note-head"><span><i></i> System operational</span><b>LIVE</b></div><strong>Forecast engine</strong><small>Trend + weekly seasonality</small><div class="sidebar-meter"><i></i></div><p>Model confidence <b>87%</b></p></div>
-    <p class="sidebar-version">ForecastIQ Academic Suite · v1.0</p>
-  </aside>
-
-  <main>
+    </nav></div>
     <header class="app-header"><div class="header-copy"><div class="breadcrumb"><span>ForecastIQ</span><i>/</i><strong>Analytics workspace</strong></div><h1 id="pageTitle">Business overview</h1><div class="header-meta"><p id="pageDescription" class="page-description">Your most important sales signals and the next 30-day outlook.</p><span><i></i> Data verified</span><time id="headerDate"></time></div></div><div class="header-actions"><button id="refreshDashboardBtn" class="icon-action refresh-action" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button><button id="guideBtn" class="icon-action" title="Open guided tour" aria-label="Open guided tour">?</button><label class="upload professional-upload"><span>＋</span> Import data<input id="fileInput" type="file" accept=".csv" /></label><button id="downloadBtn" class="export-action">Export report</button><div class="account-menu"><button id="accountButton" class="account-button"><span id="accountInitials">DE</span><span><strong id="accountName">Demo Executive</strong><small id="accountOrg">ForecastIQ</small></span><i class="account-chevron">⌄</i></button><div id="accountDropdown" class="account-dropdown"><div><strong id="menuName">Demo Executive</strong><small id="menuEmail">demo@forecastiq.app</small></div><button id="logoutBtn">Sign out</button></div></div></div></header>
 
     <section id="dashboard" class="view active">
@@ -127,7 +125,8 @@
     </section>
 
     <section id="data" class="view">
-      <div class="section-intro"><div><p class="eyebrow">DATA PIPELINE</p><h2>Sales data manager</h2><p>Upload a CSV with date, sales and category columns, or use the included sample dataset.</p></div><button id="resetBtn">Restore sample data</button></div>
+      <div class="section-intro"><div><p class="eyebrow">DATA PIPELINE</p><h2>Sales data manager</h2><p>Inspect the source records behind every chart, or upload your own daily sales CSV.</p></div><button id="resetBtn">Load public retail data</button></div>
+      <article class="data-source-panel"><div><p class="eyebrow">SOURCE & METHODOLOGY</p><h3 id="sourcePanelTitle">Sales dataset</h3><p id="sourcePanelDescription"></p><div id="sourcePanelLinks" class="source-links"></div></div><label>Sales currency<select id="salesCurrency" aria-label="Sales dataset currency"><option value="GBP">GBP · British pound</option><option value="INR">INR · Indian rupee</option><option value="USD">USD · US dollar</option><option value="EUR">EUR · Euro</option></select><small id="currencyHint">Original source currency. No exchange conversion is applied.</small></label></article>
       <article class="dropzone" id="dropzone"><strong>Drop your sales CSV here</strong><span>or choose “Upload CSV” above</span><small>Required: date, sales. Optional: category.</small></article>
       <div class="data-summary" id="dataSummary"></div>
       <article class="panel table-wrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Category</th><th>Data quality</th></tr></thead><tbody id="dataRows"></tbody></table></article>
@@ -170,10 +169,15 @@
   <div id="toast" role="status"></div>
   <div id="tourOverlay" class="tour-overlay" aria-hidden="true"><div class="tour-card"><button id="closeTour" class="tour-close" aria-label="Close tour">×</button><p class="gold-kicker">60-SECOND TOUR</p><h2 id="tourTitle">Welcome to ForecastIQ</h2><p id="tourText">Start with your business overview, then explore forecasts and turn insights into action.</p><div class="tour-progress" id="tourProgress"></div><div class="tour-actions"><button id="tourBack">Back</button><button id="tourNext" class="primary">Next</button></div></div></div>
   <script src="core.js"></script>
+  <script src="samples/uci-retail.js"></script>
+  <script src="chart-options.js"></script>
   <script src="app.js"></script>
   <script src="auth.js"></script>
   <script src="enhancements.js"></script>
   <script src="market-ui.js"></script>
   <script src="forecast-studio.js"></script>
+  <script src="premium.js"></script>
+  <script src="navigation.js"></script>
+  <script src="market-data-state.js"></script>
 </body>
 </html>

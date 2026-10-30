@@ -4,15 +4,15 @@ ForecastIQ is a browser-based college macro project that accepts historical sale
 
 ## Run the project
 
-1. On Windows, double-click `START_FORECASTIQ.bat` to start the complete website and open it in your browser. Alternatively, run `python server.py` and visit `http://localhost:8765`.
-2. Use the built-in 180-day dataset or click **Upload CSV**.
+1. Install Node.js 20 or later. On Windows, double-click `START_FORECASTIQ.bat` to start the complete website and open it in your browser. Alternatively, run `npm start` and visit `http://localhost:8765`.
+2. Explore the public historical retail dataset, select a labeled demo, or click **Import data**.
 3. Your CSV must contain `date` and `sales` columns. `category` is optional.
 
-Opening `index.html` directly also works for sales analysis and uploaded stock CSVs. A built-in canvas fallback keeps charts available if the Chart.js CDN cannot be reached. Live web-market retrieval requires the local server.
+Opening `index.html` directly also works for sales analysis and uploaded stock CSVs. Chart.js is bundled locally, with a canvas fallback if it is unavailable. Live web-market retrieval requires the local server.
 
 ## Features
 
-- Professional executive command center with decision-readiness scoring, priority signals and next-best actions
+- Executive overview with measured holdout error, priority signals and dataset context
 - Responsive premium navigation, live data-quality context and one-click dashboard refresh
 - KPI overview: revenue, daily average, growth and leading category
 - CSV upload, drag-and-drop, validation and preview
@@ -26,7 +26,7 @@ Opening `index.html` directly also works for sales analysis and uploaded stock C
 - Responsive layout for desktop and mobile
 - Four realistic demo businesses spanning lifestyle retail, grocery, electronics and fashion
 - Automatic dedicated company workspace after any business CSV upload
-- Industry-specific orders, customers, order value, margin, targets and channel mix
+- Clearly labeled demo assumptions for orders, margins, targets and channels; these are hidden for real and uploaded datasets
 - Luxury sign-in, registration, remembered-session, account menu and logout experience
 - Stock performance analyzer with market-benchmark comparison
 - Live NSE/BSE history for Indian symbols such as RELIANCE, TCS, INFY and HDFCBANK
@@ -48,7 +48,7 @@ Use real ISO dates (`YYYY-MM-DD`), non-negative numeric sales, one aggregated ro
 
 ### Stock-performance CSV
 
-Use `date,stock,benchmark` columns containing at least 20 positive historical closing-price rows. The live option retrieves adjusted closing-price history through the local server and caches responses for five minutes. Market data can be delayed or temporarily unavailable. This module is educational and does not provide investment advice.
+Use `date,stock,benchmark` columns containing at least 20 positive historical closing-price rows. The live option retrieves adjusted closing-price history through the local Node.js server. Market data can be delayed or temporarily unavailable. This module is educational and does not provide investment advice.
 
 ## Forecast design
 
@@ -57,12 +57,16 @@ The primary method fits ordinary least-squares linear regression to recent value
 ## Run automated checks
 
 ```powershell
-node tests/model-tests.js
-python tests/server-tests.py
-node tests/browser-tests.js
+npm ci
+npm run test:model
+npm run test:vercel
+npm run test:ui
+npm run test:data
+npm run test:market
+npm run test:charts
 ```
 
-The JavaScript suite validates regression, date arithmetic, forecast horizons, holdout alignment, quoted CSV fields and rejected invalid data. The Python suite starts an isolated local server, checks the site and analytics core, and verifies invalid market input. The optional Playwright browser suite verifies demo login, dashboard rendering, forecast controls, Eternal Ltd. upload, the dedicated company workspace, stock charts and the no-CDN fallback.
+The suites validate forecasting, CSV parsing, source reconciliation, navigation, currency switching, uploaded-company views, market-provider failure and recovery, and API input handling. DOM checks use JSDOM with stubbed requests. Chart checks render the actual Chart.js configuration at mobile and desktop widths; they do not automate a browser.
 
 ## Project structure
 
@@ -75,12 +79,14 @@ The JavaScript suite validates regression, date arithmetic, forecast horizons, h
 - `sample_sales.csv` — upload-ready demonstration dataset
 - `samples/Eternal_Ltd_Synthetic_Daily_Sales.csv` — 365-row company dataset for the dedicated business workspace
 - `tests/model-tests.js` — automated logic checks
-- `tests/browser-tests.js` — complete browser workflow checks
-- `docs/` — five milestone reports and project documentation
+- `server.mjs` — local static server and market API routes
+- `tests/premium-tests.cjs` — DOM checks for navigation, charts and uploaded data
+- `tests/market-state-tests.cjs` — verified market data and provider-failure checks
+- `samples/UCI_SOURCE.md` — public dataset attribution and transformation notes
 
 ## Deployment
 
-The sales-only application can be deployed to a static host. Live `/api/market` and `/api/indices` routes require `server.py` or an equivalent backend and will not work on static hosting alone. No database or secret key is required for the academic local demo; uploaded sales data remains in browser memory.
+The sales-only application can be deployed to a static host. Live `/api/market` and `/api/indices` routes require `server.mjs` locally or the included Vercel functions and will not work on static hosting alone. No database or secret key is required for the academic local demo; uploaded sales data remains in browser memory.
 
 ### Authentication scope
 
@@ -89,3 +95,11 @@ The included authentication is a fully interactive academic demonstration. Accou
 ## Academic note
 
 Replace student/college placeholders in the reports before submission. The forecast is a decision-support estimate and must be evaluated with business-specific data.
+
+## Public historical sales data
+
+The default workspace uses real UCI Online Retail transactions, aggregated to daily gross merchandise sales from January 1 to November 30, 2011. Values remain in GBP. Returns, cancellations, postage, fees and adjustments are excluded. Days with no qualifying recorded sales are explicit zeros, not interpolated values. These are historical observations, not a live business feed. See [source, attribution, exclusions and reconciliation](samples/UCI_SOURCE.md). Synthetic businesses remain available as clearly labeled demos.
+
+Page options are always visible in a horizontal navigation bar at the top. On narrow screens the same bar scrolls horizontally. The Data manager provides source links, a downloadable daily CSV, and currency selection for uploads. Indian market prices are fetched through the local API, and the app hides unverified charts while waiting or when the provider fails.
+
+Additional checks: `npm run test:ui`, `npm run test:data`, `npm run test:market`, and `npm run test:charts`. The last command renders the actual Chart.js sales and country charts at 360px and 900px into `.runtime/qa/chart-renders`.

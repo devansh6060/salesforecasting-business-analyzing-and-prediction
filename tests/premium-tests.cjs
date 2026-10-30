@@ -1,0 +1,127 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { JSDOM } = require('jsdom');
+const configure = require('../chart-options.js');
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const dom = new JSDOM(html, { url: 'http://localhost:8765', runScripts: 'outside-only', pretendToBeVisual: true });
+const w = dom.window;
+const errors = [];
+w.addEventListener('error', event => errors.push(event.error));
+w.fetch = async () => ({ ok: true, json: async () => ({ indices: [] }) });
+w.Chart = class {
+  constructor(canvas, config) { this.canvas = canvas; this.config = config; }
+  destroy() {}
+  resize() {}
+};
+w.print = () => {};
+w.scrollTo = () => {};
+try {
+  for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
+    vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), dom.getInternalVMContext(), { filename: name });
+  }
+  assert.deepEqual(errors, []);
+  const read = expression => vm.runInContext(expression, dom.getInternalVMContext());
+  assert.equal(w.document.querySelectorAll('.nav-symbol svg').length, 6);
+  assert.equal(w.document.querySelector('#dashboard .kpis').nextElementSibling.classList.contains('premium-chart-row'), true);
+  assert.match(w.document.querySelector('.business-switcher small').textContent, /REAL HISTORICAL/);
+  assert.equal(read('rows.length'), 334);
+  assert.equal(read('Math.round(metrics().total*100)'), 888913313);
+  assert.equal(read('Math.round(Object.values(metrics().by).reduce((a,b)=>a+b,0)*100)'), 888913313);
+  assert.equal(read('Object.keys(metrics().by).length'), 6);
+  assert.equal(read('ForecastIQCurrency'), 'GBP');
+  assert.match(w.document.getElementById('revenueKpi').textContent, /£/);
+  assert.match(w.document.getElementById('reportContent').textContent, /Historical observed sales/);
+  const menu = w.document.getElementById('workspaceNavigation');
+  const main = w.document.querySelector('main');
+  assert.equal(menu.tagName, 'NAV');
+  assert.equal(menu.closest('.workspace-bar') !== null, true);
+  assert.equal(menu.getAttribute('aria-label'), 'Primary navigation');
+  assert.equal(menu.hidden, false);
+  assert.equal(menu.querySelectorAll('.nav').length, 6);
+  assert.equal(w.document.querySelector('aside.sidebar'), null);
+  assert.equal(w.document.getElementById('workspaceMenuButton'), null);
+  assert.equal(w.document.getElementById('sidebarCloseButton'), null);
+  assert.equal(w.document.getElementById('sidebarBackdrop'), null);
+  assert.equal(menu.getAttribute('role'), null);
+  assert.equal(menu.getAttribute('aria-modal'), null);
+  assert.notEqual(main.inert, true);
+  const visibleButtons = [...menu.querySelectorAll('.nav')].filter(button => !button.disabled && !button.hidden && !button.classList.contains('hidden'));
+  assert.equal(visibleButtons.length, 5, 'Uploaded-company option stays hidden until a CSV is loaded');
+  const firstButton = visibleButtons[0], lastButton = visibleButtons.at(-1);
+  function moveFocus(key, expected) {
+    const event = new w.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    w.document.activeElement.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, true);
+    assert.equal(w.document.activeElement, expected);
+  }
+  firstButton.focus();
+  moveFocus('ArrowRight', visibleButtons[1]);
+  moveFocus('End', lastButton);
+  moveFocus('ArrowRight', firstButton);
+  moveFocus('ArrowLeft', lastButton);
+  moveFocus('Home', firstButton);
+  assert.equal(w.document.getElementById('dashboard').classList.contains('active'), true, 'Arrow keys move focus without changing the selected page');
+  w.document.querySelector('.nav[data-view="forecast"]').click();
+  assert.equal(menu.hidden, false);
+  assert.equal(w.document.getElementById('forecast').classList.contains('active'), true);
+  assert.equal(w.document.querySelector('.nav[data-view="forecast"]').getAttribute('aria-current'), 'page');
+  assert.equal(w.document.querySelector('.nav[data-view="dashboard"]').getAttribute('aria-current'), 'false');
+  w.document.getElementById('pageTitle').click();
+  assert.equal(menu.hidden, false, 'Top navigation stays visible during content interaction');
+  main.tabIndex = -1; main.focus();
+  assert.equal(menu.hidden, false, 'Content focus never collapses the top navigation');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(menu.hidden, false);
+  w.document.querySelector('.workspace-brand').click();
+  assert.equal(w.document.getElementById('dashboard').classList.contains('active'), true);
+  assert.equal(read('charts.salesChart.config.data.datasets[0].data.filter(Number.isFinite).length'), 45);
+  assert.equal(read('charts.salesChart.config.data.datasets[1].data.filter(Number.isFinite).length'), 31);
+  assert.equal(read('charts.salesChart.config.data.datasets[0].data[0]'), read('rows.at(-45).sales'));
+  assert.equal(read('charts.salesChart.config.data.datasets[1].data.at(-1)'), read('metrics().f.at(-1).sales'));
+  assert.equal(read('charts.forecastChart.config.data.datasets[1].borderDash.join()'), '5,4');
+  const expectedError = read("ForecastIQCore.evaluateForecast(rows,method.value,30).mape.toFixed(1)");
+  assert.equal(w.document.getElementById('confidenceScore').textContent, expectedError);
+  const originalRevenue = w.document.getElementById('revenueKpi').textContent;
+  w.document.getElementById('businessSelector').value = 'nova';
+  w.document.getElementById('businessSelector').dispatchEvent(new w.Event('change'));
+  assert.notEqual(w.document.getElementById('revenueKpi').textContent, originalRevenue);
+  // Use real parser output from the included CSV to exercise uploaded-data behavior.
+  w.testCsv = fs.readFileSync(path.join(root, 'sample_sales.csv'), 'utf8');
+  read("rows=parseCSV(testCsv);render();openCompanyPage('Acme_sales.csv')");
+  assert.equal(menu.hidden, false);
+  const companyOption = w.document.querySelector('.nav[data-view="businessDetail"]');
+  assert.equal(companyOption.classList.contains('hidden'), false);
+  assert.equal(companyOption.getAttribute('aria-current'), 'page');
+  companyOption.focus();
+  moveFocus('ArrowRight', w.document.querySelector('.nav[data-view="report"]'));
+  moveFocus('ArrowLeft', companyOption);
+  assert.match(w.document.querySelector('.business-switcher small').textContent, /UPLOADED/);
+  assert.equal(w.document.querySelector('.operations-grid').style.display, 'none');
+  assert.match(w.document.querySelector('.chart-caption').textContent, /Uploaded CSV/);
+  assert.equal(read('ForecastIQCurrency'), 'INR');
+  const currency = w.document.getElementById('salesCurrency');
+  currency.value = 'USD'; currency.dispatchEvent(new w.Event('change'));
+  assert.equal(read('ForecastIQCurrency'), 'USD');
+  assert.match(w.document.getElementById('companyCoverage').textContent, /Currency: USD/);
+  assert.equal(read('charts.salesChart.config.data.datasets[0].data[0]'), read('rows.slice(-45)[0].sales'));
+  assert.equal(read('charts.companyTrendChart.config.data.datasets[0].data[0]'), read('rows.slice(-90)[0].sales'));
+  w.document.getElementById('method').value = 'moving';
+  w.document.getElementById('method').dispatchEvent(new w.Event('change'));
+  assert.equal(read('charts.salesChart.config.data.datasets[1].data.at(-1)'), read("forecast(rows,30,'moving').at(-1).sales"));
+  assert.match(w.document.querySelector('.chart-caption').textContent, /Moving average/);
+  w.document.getElementById('resetBtn').click();
+  assert.match(w.document.querySelector('.business-switcher small').textContent, /REAL HISTORICAL/);
+  assert.equal(w.document.querySelector('.operations-grid').style.display, 'none');
+  assert.equal(read('ForecastIQCurrency'), 'GBP');
+  assert.equal(read('rows.at(-1).date'), '2011-11-30');
+  assert.equal(w.document.getElementById('stocks').classList.contains('market-awaiting-data'), true);
+  const stock = configure('stockChart', 'line', { labels: ['2026-01-01'], datasets: [{ label: 'Stock', data: [100] }] });
+  assert.equal(stock.options.scales.y.ticks.callback(100), '100');
+  assert.equal(stock.data.datasets[0].tension, 0);
+  assert.match(stock.options.plugins.tooltip.callbacks.label({ dataset: { label: 'Stock' }, parsed: { y: 100 } }), /index points/);
+  assert.deepEqual(errors, []);
+  console.log('Premium layout, chart data, upload, reset and axis checks passed.');
+} finally { w.close(); }

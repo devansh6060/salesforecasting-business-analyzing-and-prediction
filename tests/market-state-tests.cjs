@@ -1,0 +1,125 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { JSDOM } = require('jsdom');
+
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const dom = new JSDOM(html, {
+  url: 'http://localhost:8765',
+  runScripts: 'outside-only',
+  pretendToBeVisual: true
+});
+const w = dom.window;
+const context = dom.getInternalVMContext();
+const read = expression => vm.runInContext(expression, context);
+const stateStyles = w.document.createElement('style');
+stateStyles.textContent = fs.readFileSync(path.join(root, 'navigation.css'), 'utf8');
+w.document.head.append(stateStyles);
+const errors = [];
+const requests = [];
+let providerState = 'success';
+let fixture;
+
+w.addEventListener('error', event => errors.push(event.error));
+w.Chart = class {
+  constructor(canvas, config) { this.canvas = canvas; this.config = config; }
+  destroy() {}
+  resize() {}
+};
+w.scrollTo = () => {};
+w.print = () => {};
+w.fetch = async url => {
+  requests.push(String(url));
+  if (url === '/api/indices') return { ok: true, json: async () => ({ indices: [] }) };
+  assert.match(String(url), /^\/api\/market\?/);
+  if (providerState === 'failure') throw new Error('Test provider unavailable');
+  assert.ok(fixture, 'A test fixture must be configured before market requests');
+  return { ok: true, json: async () => fixture };
+};
+
+async function main() {
+  try {
+    for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
+      vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), context, { filename: name });
+    }
+    const workspace = w.document.getElementById('stocks');
+    const state = () => w.document.getElementById('quoteMarketState').textContent;
+    const menu = w.document.getElementById('workspaceNavigation');
+
+    assert.equal(workspace.classList.contains('market-awaiting-data'), true);
+    assert.equal(w.getComputedStyle(w.document.getElementById('stockChart')).visibility, 'hidden');
+    assert.equal(w.getComputedStyle(w.document.getElementById('stockMetrics')).visibility, 'hidden');
+    assert.equal(read('currentMarketPayload'), null);
+    assert.equal(state(), 'AWAITING DATA');
+    assert.equal(w.document.getElementById('marketMeta').textContent, 'No market history loaded');
+    assert.equal(requests.filter(url => url.startsWith('/api/market')).length, 0);
+
+    // Deterministic synthetic values are used only as an explicitly named test fixture.
+    // No request leaves this JSDOM instance.
+    const data = read('ForecastIQCore.sampleStocks()');
+    fixture = {
+      symbol: 'RELIANCE.NS', benchmark: '^NSEI',
+      stockName: 'Test fixture company (not market data)',
+      currency: 'INR', exchange: 'Test exchange', marketState: 'CLOSED',
+      timezone: 'Asia/Kolkata', fetchedAt: '2026-10-30T12:00:00Z', data,
+      quote: { price: data.at(-1).stock, previousClose: data.at(-2).stock,
+        changePercent: (data.at(-1).stock / data.at(-2).stock - 1) * 100,
+        dayLow: data.at(-1).stock - 5, dayHigh: data.at(-1).stock + 5, volume: 10000 }
+    };
+
+    const pending = read('fetchMarketData()');
+    assert.equal(workspace.classList.contains('market-awaiting-data'), true);
+    assert.equal(state(), 'LOADING');
+    assert.equal(read('currentMarketPayload'), null);
+    await pending;
+    assert.equal(workspace.classList.contains('market-awaiting-data'), false);
+    assert.notEqual(w.getComputedStyle(w.document.getElementById('stockChart')).visibility, 'hidden');
+    assert.equal(state(), 'CLOSED');
+    assert.equal(read('currentMarketPayload.stockName'), fixture.stockName);
+    assert.equal(w.document.getElementById('quoteCompany').textContent, fixture.stockName);
+    assert.match(w.document.getElementById('quoteTimestamp').textContent, /latest session/);
+    assert.match(w.document.getElementById('marketStatus').textContent, /real trading sessions/);
+    assert.equal(read('charts.stockChart.config.data.datasets[0].data.at(-1)'), data.at(-1).stock / data[0].stock * 100);
+    assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
+
+    // A provider error must conceal the previous prices and clear verified metadata.
+    providerState = 'failure';
+    await read('fetchMarketData()');
+    assert.equal(workspace.classList.contains('market-awaiting-data'), true);
+    assert.equal(w.getComputedStyle(w.document.getElementById('stockChart')).visibility, 'hidden');
+    assert.equal(w.getComputedStyle(w.document.getElementById('stockMetrics')).visibility, 'hidden');
+    assert.equal(read('currentMarketPayload'), null);
+    assert.equal(state(), 'UNAVAILABLE');
+    assert.equal(w.document.getElementById('quoteCompany').textContent, 'Market data unavailable');
+    assert.equal(w.document.getElementById('quoteTimestamp').textContent, 'No verified response');
+    assert.match(w.document.getElementById('marketMeta').textContent, /No simulated prices/);
+    assert.match(w.document.getElementById('marketStatus').textContent, /Test provider unavailable/);
+    assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
+
+    // Retry through the same public function restores the verified chart state.
+    providerState = 'success';
+    await read('fetchMarketData()');
+    assert.equal(workspace.classList.contains('market-awaiting-data'), false);
+    assert.notEqual(w.getComputedStyle(w.document.getElementById('stockChart')).visibility, 'hidden');
+    assert.equal(read('currentMarketPayload.symbol'), fixture.symbol);
+    assert.equal(state(), 'CLOSED');
+    assert.equal(requests.filter(url => url.startsWith('/api/market')).length, 3);
+
+    assert.equal(menu.hidden, false);
+    assert.equal(menu.closest('.workspace-bar') !== null, true);
+    w.document.getElementById('pageTitle').click();
+    assert.equal(menu.hidden, false, 'Top navigation remains visible during content interaction');
+    w.document.querySelector('.nav[data-view="report"]').click();
+    assert.equal(menu.hidden, false, 'Page selection leaves top navigation visible');
+    assert.equal(w.document.getElementById('report').classList.contains('active'), true);
+    assert.equal(w.document.querySelector('.nav[data-view="report"]').getAttribute('aria-current'), 'page');
+    assert.deepEqual(errors, []);
+    console.log('Market awaiting, loading, provider success, failure, recovery and navigation checks passed.');
+  } finally {
+    w.close();
+  }
+}
+
+main().catch(error => { console.error(error); process.exitCode = 1; });
