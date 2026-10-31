@@ -66,6 +66,10 @@
   }
   function escapeText(text) { const span = document.createElement('span'); span.textContent = text; return span.innerHTML; }
   function syncSource() {
+    ForecastIQOverviewCurrency.sync();
+    document.querySelector('#dashboard .revenue-icon').textContent = '$';
+    const demandIcon = document.querySelector('#executiveSignals .signal-item:nth-child(2) .signal-icon');
+    if (demandIcon) demandIcon.textContent = '$';
     const imported = source === 'upload', real = source === 'public';
     const model = document.querySelector('#method').value;
     const evaluation = evaluationForSelection();
@@ -86,7 +90,7 @@
     document.querySelector('.operations-panel .panel-head p').textContent = 'DEMO OPERATING ASSUMPTIONS';
     document.querySelector('.channel-mix').closest('article').querySelector('.panel-head p').textContent = 'DEMO CHANNEL MIX';
     document.querySelector('.journey-step small').textContent = `${rows.length} records loaded`;
-    caption.textContent = `${real ? 'UCI observed transactions' : imported ? 'Uploaded CSV' : 'Synthetic demo'} · ${rows.length} calendar records (${rows[0].date} to ${rows.at(-1).date}). Latest ${Math.min(45, rows.length)} observed days + dashed 30-day projection. ${methodNames[model]}. Currency: ${globalThis.ForecastIQCurrency}.`;
+    caption.textContent = `${real ? 'UCI observed transactions' : imported ? 'Uploaded CSV' : 'Synthetic demo'} · ${rows.length} calendar records (${rows[0].date} to ${rows.at(-1).date}). Latest ${Math.min(45, rows.length)} observed days + dashed 30-day projection. ${methodNames[model]}. Display currency: USD.`;
     document.querySelector('#categoryChart').parentElement.querySelector('h3').textContent = real ? 'Sales by destination market' : 'Revenue contribution';
     document.querySelector('#categoryChart').parentElement.querySelector('.panel-head p').textContent = real ? 'MARKET MIX' : 'CATEGORY MIX';
     categoryCaption.textContent = real ? 'Destination country from the source transactions, across the full selected history. Small markets grouped as Other.' : 'Share of revenue across the full selected history. Exact source records are available in Data manager.';
@@ -108,7 +112,7 @@
       const m = metrics();
       document.querySelector('#revenueKpi').parentElement.querySelector('.kpi-top p').textContent = 'Gross merchandise sales';
       dataSummary.innerHTML = `<div><strong>${rows.length}</strong><span>Calendar days</span></div><div><strong>${publicData.transactionCount.toLocaleString()}</strong><span>Qualifying sale lines</span></div><div><strong>${publicData.orderCount.toLocaleString()}</strong><span>Distinct invoices</span></div><div><strong>${rows[0].date} → ${rows.at(-1).date}</strong><span>Observed date range</span></div>`;
-      document.querySelector('#insights').innerHTML = `<article class="insight"><b>Observed sales</b><p>${money(m.total)} recorded over ${rows.length} calendar days. Returns and cancellations are excluded, so this is gross positive sales.</p></article><article class="insight"><b>Largest destination market</b><p>${escapeText(m.best)} accounts for the largest share of sales in the original transactions. Country is a customer destination, not a product category.</p></article><article class="insight warn"><b>Historical planning example</b><p>The outlook begins after ${rows.at(-1).date}. It demonstrates the method on historical data and is not a forecast for today.</p></article>`;
+      document.querySelector('#insights').innerHTML = `<article class="insight"><b>Observed sales</b><p>${overviewMoney(m.total)} recorded over ${rows.length} calendar days. Returns and cancellations are excluded, so this is gross positive sales.</p></article><article class="insight"><b>Largest destination market</b><p>${escapeText(m.best)} accounts for the largest share of sales in the original transactions. Country is a customer destination, not a product category.</p></article><article class="insight warn"><b>Historical planning example</b><p>The outlook begins after ${rows.at(-1).date}. It demonstrates the method on historical data and is not a forecast for today.</p></article>`;
       nextActionTitle.textContent = mape != null && mape > 20 ? 'Review model error before using the outlook' : 'Compare the historical forecasting methods';
       nextActionCopy.textContent = `This dataset ends on ${rows.at(-1).date}. Compare holdout MAE and MAPE in Forecast studio, then upload current business records for present-day planning.`;
       document.querySelector('#executiveSignals .signal-item:nth-child(2) .signal-copy span').textContent = `30 model days after ${rows.at(-1).date}; historical planning example.`;

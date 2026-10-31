@@ -10,7 +10,7 @@ const dom = new JSDOM(html, { url: 'http://localhost:8765', runScripts: 'outside
 const w = dom.window;
 const errors = [];
 w.addEventListener('error', event => errors.push(event.error));
-w.fetch = async () => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ indices: [] }) });
+w.fetch = async url => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => String(url).startsWith('/api/exchange-rate') ? { base: new URL(url, 'http://localhost').searchParams.get('base'), quote: 'USD', rate: 1.25, date: '2026-10-30' } : ({ indices: [] }) });
 w.Chart = class {
   constructor(canvas, config) { this.canvas = canvas; this.config = config; }
   destroy() {}
@@ -18,8 +18,8 @@ w.Chart = class {
 };
 w.print = () => {};
 w.scrollTo = () => {};
-try {
-  for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
+async function main() { try {
+  for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'overview-currency.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), dom.getInternalVMContext(), { filename: name });
   }
   assert.deepEqual(errors, []);
@@ -32,7 +32,12 @@ try {
   assert.equal(read('Math.round(Object.values(metrics().by).reduce((a,b)=>a+b,0)*100)'), 888913313);
   assert.equal(read('Object.keys(metrics().by).length'), 6);
   assert.equal(read('ForecastIQCurrency'), 'GBP');
-  assert.match(w.document.getElementById('revenueKpi').textContent, /£/);
+  await new Promise(resolve => w.setTimeout(resolve, 0));
+  assert.equal(w.document.getElementById('revenueKpi').textContent, '$11,111,416');
+  assert.match(w.document.getElementById('overviewCurrencyNote').textContent, /1 GBP = \$1.250000/);
+  assert.equal(read('rows.at(-1).sales'), w.ForecastIQPublicData.rows.at(-1).sales);
+  assert.equal(read('charts.salesChart.config.data.datasets[0].data.at(0)'), read('rows.slice(-45)[0].sales * 1.25'));
+  assert.match(read('charts.salesChart.config.options.scales.y.title.text'), /USD/);
   assert.match(w.document.getElementById('reportContent').textContent, /Historical observed sales/);
   const menu = w.document.getElementById('workspaceNavigation');
   const main = w.document.querySelector('main');
@@ -79,8 +84,8 @@ try {
   assert.equal(w.document.getElementById('dashboard').classList.contains('active'), true);
   assert.equal(read('charts.salesChart.config.data.datasets[0].data.filter(Number.isFinite).length'), 45);
   assert.equal(read('charts.salesChart.config.data.datasets[1].data.filter(Number.isFinite).length'), 31);
-  assert.equal(read('charts.salesChart.config.data.datasets[0].data[0]'), read('rows.at(-45).sales'));
-  assert.equal(read('charts.salesChart.config.data.datasets[1].data.at(-1)'), read('metrics().f.at(-1).sales'));
+  assert.equal(read('charts.salesChart.config.data.datasets[0].data[0]'), read('rows.at(-45).sales * 1.25'));
+  assert.equal(read('charts.salesChart.config.data.datasets[1].data.at(-1)'), read('metrics().f.at(-1).sales * 1.25'));
   assert.equal(read('charts.forecastChart.config.data.datasets[1].borderDash.join()'), '5,4');
   const expectedError = read("ForecastIQCore.evaluateForecast(rows,method.value,30).mape.toFixed(1)");
   assert.equal(w.document.getElementById('confidenceScore').textContent, expectedError);
@@ -124,4 +129,5 @@ try {
   assert.match(stock.options.plugins.tooltip.callbacks.label({ dataset: { label: 'Stock' }, parsed: { y: 100 } }), /index points/);
   assert.deepEqual(errors, []);
   console.log('Premium layout, chart data, upload, reset and axis checks passed.');
-} finally { w.close(); }
+} finally { w.close(); } }
+main().catch(error => { console.error(error); process.exitCode = 1; });

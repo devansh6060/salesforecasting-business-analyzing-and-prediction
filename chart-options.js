@@ -2,9 +2,9 @@
   'use strict';
   const palette = ['#227d6c', '#668bb2', '#9dafba', '#abc6bd', '#ba9c76', '#cbd4d9'];
   function currencyCode() { return /^[A-Z]{3}$/.test(root.ForecastIQCurrency || '') ? root.ForecastIQCurrency : 'INR'; }
-  function currency(value, compact = false) {
-    return new Intl.NumberFormat(currencyCode() === 'INR' ? 'en-IN' : 'en-GB', {
-      style: 'currency', currency: currencyCode(),
+  function currency(value, compact = false, code = currencyCode()) {
+    return new Intl.NumberFormat(code === 'INR' ? 'en-IN' : code === 'USD' ? 'en-US' : 'en-GB', {
+      style: 'currency', currency: code,
       minimumFractionDigits: compact ? 0 : 2, maximumFractionDigits: compact ? 1 : 2,
       ...(compact ? { notation: 'compact' } : {})
     }).format(value);
@@ -15,8 +15,12 @@
   }
   function configure(id, type, data, overrides = {}) {
     const indexed = id === 'stockChart';
+    const overview = ['salesChart', 'categoryChart'].includes(id) && root.ForecastIQOverviewCurrency;
+    const code = overview ? 'USD' : currencyCode();
+    const displayMoney = (value, compact = false) => currency(value, compact, code);
     const datasets = data.datasets.map((dataset, index) => ({
       ...dataset,
+      ...(overview ? { data: dataset.data.map(value => Number.isFinite(value) ? overview.convert(value) : value) } : {}),
       ...(type === 'doughnut' ? { backgroundColor: palette, borderColor: '#fff', borderWidth: 3, hoverOffset: 5 } : {
         borderColor: palette[index % palette.length], backgroundColor: index ? '#668bb20a' : '#227d6c0b',
         borderWidth: 2, tension: 0, pointRadius: 0, pointHoverRadius: 4, pointHitRadius: 12,
@@ -37,15 +41,15 @@
             if (!Number.isFinite(value)) return `${context.dataset.label || context.label}: unavailable`;
             if (type === 'doughnut') {
               const total = context.dataset.data.reduce((sum, item) => sum + (Number.isFinite(item) ? item : 0), 0);
-              return `${context.label}: ${currency(value)} (${total ? (value / total * 100).toFixed(1) : '0'}%)`;
+              return `${context.label}: ${displayMoney(value)} (${total ? (value / total * 100).toFixed(1) : '0'}%)`;
             }
-            return `${context.dataset.label}: ${indexed ? Number(value).toFixed(2) + ' index points' : currency(value)}`;
+            return `${context.dataset.label}: ${indexed ? Number(value).toFixed(2) + ' index points' : displayMoney(value)}`;
           } }
         }
       },
       scales: type === 'doughnut' ? {} : {
         x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 7, maxRotation: 0, color: '#81919a', font: { size: 10 }, callback(value) { return dateLabel(this.getLabelForValue(value)); } } },
-        y: { beginAtZero: !indexed, grace: '8%', border: { display: false }, grid: { color: '#edf1f3', drawTicks: false }, title: { display: true, text: indexed ? 'Indexed performance · first day = 100' : `Daily revenue · ${currencyCode()}`, color: '#81919a', font: { size: 10 } }, ticks: { maxTicksLimit: 5, padding: 10, color: '#81919a', font: { size: 10 }, callback: value => indexed ? Number(value).toFixed(0) : currency(value, true) } }
+        y: { beginAtZero: !indexed, grace: '8%', border: { display: false }, grid: { color: '#edf1f3', drawTicks: false }, title: { display: true, text: indexed ? 'Indexed performance · first day = 100' : `Daily revenue · ${code}`, color: '#81919a', font: { size: 10 } }, ticks: { maxTicksLimit: 5, padding: 10, color: '#81919a', font: { size: 10 }, callback: value => indexed ? Number(value).toFixed(0) : displayMoney(value, true) } }
       }
     };
     const options = { ...defaults, ...overrides, plugins: { ...defaults.plugins, ...overrides.plugins }, scales: overrides.scales || defaults.scales };

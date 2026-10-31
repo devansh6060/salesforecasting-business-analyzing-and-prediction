@@ -32,6 +32,7 @@ w.scrollTo = () => {};
 w.print = () => {};
 w.fetch = async url => {
   requests.push(String(url));
+  if (String(url).startsWith('/api/exchange-rate')) return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ base: new URL(url, 'http://localhost').searchParams.get('base'), quote: 'USD', rate: 1.25, date: '2026-10-30' }) };
   if (url === '/api/indices') return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ indices: [] }) };
   assert.match(String(url), /^\/api\/market\?/);
   if (providerState === 'failure') throw new Error('Test provider unavailable');
@@ -43,7 +44,7 @@ w.fetch = async url => {
 
 async function main() {
   try {
-    for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
+    for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'overview-currency.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
       vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), context, { filename: name });
     }
     const workspace = w.document.getElementById('stocks');

@@ -8,6 +8,7 @@
     "test:data": "node tests/public-data-tests.cjs",
     "test:charts": "node scripts/render-charts.cjs",
     "test:market": "node tests/market-state-tests.cjs",
+    "test:currency": "node tests/overview-currency-tests.cjs",
     "start": "node server.mjs",
     "test:model": "node tests/model-tests.js",
     "test:vercel": "node tests/vercel-tests.mjs"

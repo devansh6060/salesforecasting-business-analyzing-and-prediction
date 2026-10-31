@@ -4,13 +4,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import market from './api/market.mjs';
 import indices from './api/indices.mjs';
+import exchangeRate from './api/exchange-rate.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.csv': 'text/csv', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
-    const handler = { '/api/market': market, '/api/indices': indices }[url.pathname];
+    const handler = { '/api/market': market, '/api/indices': indices, '/api/exchange-rate': exchangeRate }[url.pathname];
     if (handler) {
       const response = await handler(new Request(url, { method: req.method }));
       res.writeHead(response.status, Object.fromEntries(response.headers));

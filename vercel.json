@@ -4,6 +4,9 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "functions": {
+    "api/exchange-rate.mjs": {
+      "maxDuration": 20
+    },
     "api/market.mjs": {
       "maxDuration": 20
     },
