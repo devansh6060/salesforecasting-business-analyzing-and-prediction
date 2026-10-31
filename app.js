@@ -15,7 +15,59 @@ function renderReport(){const m=metrics();reportContent.innerHTML=`<p class="eye
 function stockStats(data){const first=data[0],last=data.at(-1),days=Math.max(1,(new Date(last.date)-new Date(first.date))/86400000),ret=(last.stock/first.stock-1)*100,bench=(last.benchmark/first.benchmark-1)*100,cagr=(Math.pow(last.stock/first.stock,365/days)-1)*100;const daily=data.slice(1).map((r,i)=>r.stock/data[i].stock-1),mean=daily.reduce((a,b)=>a+b,0)/daily.length,vol=Math.sqrt(daily.reduce((s,x)=>s+(x-mean)**2,0)/(daily.length-1))*Math.sqrt(252)*100;let peak=first.stock,maxDD=0;data.forEach(r=>{peak=Math.max(peak,r.stock);maxDD=Math.min(maxDD,(r.stock/peak-1)*100)});return{ret,bench,cagr,vol,maxDD,alpha:ret-bench}}
 function renderStocks(){const s=stockStats(stockData),sn=stockSymbol.value.trim().toUpperCase()||'STOCK',bn=benchmarkSymbol.options?.[benchmarkSymbol.selectedIndex]?.text||benchmarkSymbol.value||'MARKET',first=stockData[0];chart('stockChart','line',{labels:stockData.map(r=>r.date),datasets:[{label:sn,data:stockData.map(r=>r.stock/first.stock*100),borderColor:'#0c7357',pointRadius:0,tension:.25},{label:bn,data:stockData.map(r=>r.benchmark/first.benchmark*100),borderColor:'#ed785f',pointRadius:0,tension:.25}]});stockPeriod.textContent=`${first.date} → ${stockData.at(-1).date}`;stockMetrics.innerHTML=[['Total return',s.ret],['Market return',s.bench],['Relative performance',s.alpha],['Annualized growth',s.cagr]].map(([l,v])=>`<div><span>${l}</span><strong class="${v>=0?'positive':'negative'}">${v>=0?'+':''}${v.toFixed(2)}%</strong></div>`).join('');stockInsights.innerHTML=`<p><strong>${sn} ${s.alpha>=0?'outperformed':'underperformed'} ${bn}</strong> by ${Math.abs(s.alpha).toFixed(2)} percentage points.</p><p>Annualized volatility was <strong>${s.vol.toFixed(2)}%</strong>. Maximum historical drawdown was <strong>${s.maxDD.toFixed(2)}%</strong>.</p><p>Past performance does not predict future returns.</p>`;stockTableHead.textContent=sn;benchmarkTableHead.textContent=bn;stockRows.innerHTML=stockData.slice(-12).reverse().map(r=>`<tr><td>${r.date}</td><td>${r.stock.toFixed(2)}</td><td>${r.benchmark.toFixed(2)}</td><td>${((r.stock/first.stock)/(r.benchmark/first.benchmark)*100).toFixed(1)}</td></tr>`).join('')}
 function renderLiveQuote(payload){const q=payload.quote||{},change=q.changePercent,positive=change==null||change>=0,price=value=>value==null?'—':new Intl.NumberFormat('en-IN',{style:'currency',currency:payload.currency||'INR',maximumFractionDigits:2}).format(value);quoteHero.className='quote-hero live-quote';quoteExchange.textContent=stockExchange.value;quoteCompany.textContent=payload.stockName;quoteTicker.textContent=`${payload.symbol} • ${payload.exchange}`;quotePrice.textContent=price(q.price);quoteChange.textContent=change==null?'Change unavailable':`${positive?'+':''}${change.toFixed(2)}% today`;quoteChange.className=positive?'positive':'negative';quotePrevious.textContent=price(q.previousClose);quoteRange.textContent=q.dayLow==null?'—':`${price(q.dayLow)} — ${price(q.dayHigh)}`;quoteVolume.textContent=q.volume==null?'—':new Intl.NumberFormat('en-IN',{notation:'compact',maximumFractionDigits:2}).format(q.volume);quoteMarketState.textContent=(payload.marketState||'CLOSED').replace('_',' ');quoteTimestamp.textContent=new Date(payload.fetchedAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});marketStateDot.title=`Data fetched for ${payload.timezone||'Asia/Kolkata'}`}
-async function fetchMarketData(){const raw=stockSymbol.value.trim().toUpperCase().replace(/\.(NS|BO)$/,''),exchange=stockExchange.value,symbol=`${raw}.${exchange}`,benchmark=benchmarkSymbol.value,range=stockRange.value;if(!/^[A-Z0-9&-]{1,15}$/.test(raw)){marketStatus.textContent='Enter a valid symbol such as RELIANCE, TCS or INFY.';marketStatus.className='market-status error';return}fetchMarketBtn.classList.add('loading');fetchMarketBtn.disabled=true;quoteHero.classList.add('loading');marketStatus.textContent=`Fetching ${symbol} and benchmark history…`;marketStatus.className='market-status';try{const response=await fetch(`/api/market?symbol=${encodeURIComponent(symbol)}&benchmark=${encodeURIComponent(benchmark)}&range=${encodeURIComponent(range)}`);const payload=await response.json();if(!response.ok)throw Error(payload.error||'Market data request failed');stockData=payload.data;stockSymbol.value=raw;marketMeta.textContent=`${payload.stockName} • ${payload.currency} • ${payload.exchange} • Updated ${new Date(payload.fetchedAt).toLocaleString('en-IN')}`;renderLiveQuote(payload);renderStocks();marketStatus.textContent=`Loaded ${stockData.length} real trading sessions from Yahoo Finance.`;marketStatus.className='market-status success';toastMsg(`${raw} market data updated`)}catch(error){marketStatus.textContent=`${error.message}. Make sure server.py is running and internet is available.`;marketStatus.className='market-status error'}finally{fetchMarketBtn.classList.remove('loading');fetchMarketBtn.disabled=false;quoteHero.classList.remove('loading')}}
+async function marketJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    if (location.protocol === 'file:') throw Error('Open http://localhost:8765 using START_FORECASTIQ.bat to load market data');
+    const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    const type = response.headers.get('content-type') || '';
+    const unavailable = 'Market service returned HTTP ' + response.status + '. Please retry. If this continues, the website deployment needs updating.';
+    if (!type.includes('application/json')) throw Error(unavailable);
+    let payload;
+    try { payload = await response.json(); } catch { throw Error(unavailable); }
+    if (!response.ok) throw Error(payload?.error || unavailable);
+    return payload;
+  } catch (error) {
+    if (error.name === 'AbortError') throw Error('The market provider timed out. Please retry Search.');
+    throw error;
+  } finally { clearTimeout(timer); }
+}
+async function fetchMarketData() {
+  const entered = stockSymbol.value.trim().toUpperCase();
+  const suffix = entered.match(/\.(NS|BO)$/);
+  const raw = entered.replace(/\.(NS|BO)$/, ''), exchange = suffix?.[1] || stockExchange.value;
+  stockExchange.value = exchange;
+  if (!/^[A-Z0-9&-]{1,15}$/.test(raw)) {
+    marketStatus.textContent = 'Enter a valid symbol such as RELIANCE, TCS or INFY.';
+    marketStatus.className = 'market-status error'; return;
+  }
+  const symbol = raw + '.' + exchange;
+  fetchMarketBtn.classList.add('loading'); fetchMarketBtn.disabled = true;
+  quoteHero.classList.add('loading');
+  marketStatus.textContent = 'Fetching ' + symbol + ' and benchmark history...';
+  marketStatus.className = 'market-status';
+  try {
+    const query = new URLSearchParams({ symbol, benchmark: benchmarkSymbol.value, range: stockRange.value });
+    const payload = await marketJSON('/api/market?' + query);
+    if (!Array.isArray(payload.data) || payload.data.length < 2 || !payload.data.every(row => Number.isFinite(row.stock) && row.stock > 0 && Number.isFinite(row.benchmark) && row.benchmark > 0) || !Number.isFinite(payload.quote?.price)) {
+      throw Error('The provider returned incomplete market prices. Please retry Search.');
+    }
+    stockData = payload.data; stockSymbol.value = raw;
+    marketMeta.textContent = payload.stockName + ' | ' + payload.currency + ' | ' + payload.exchange + ' | Updated ' + new Date(payload.fetchedAt).toLocaleString('en-IN');
+    renderLiveQuote(payload); renderStocks();
+    requestAnimationFrame(() => charts.stockChart?.resize?.());
+    marketStatus.textContent = 'Loaded ' + stockData.length + ' real trading sessions from Yahoo Finance. Prices may be delayed; refreshes every minute while visible.';
+    marketStatus.className = 'market-status success';
+    toastMsg(raw + ' market data updated');
+  } catch (error) {
+    marketStatus.textContent = error.message;
+    marketStatus.className = 'market-status error';
+  } finally {
+    fetchMarketBtn.classList.remove('loading'); fetchMarketBtn.disabled = false;
+    quoteHero.classList.remove('loading');
+  }
+}
 const parseStockCSV=ForecastIQCore.parseStockCSV;
 function loadStockFile(file){const reader=new FileReader();reader.onload=()=>{try{const parsed=parseStockCSV(reader.result);stockData=parsed;renderStocks();toastMsg(`Loaded ${parsed.length} market records`)}catch(e){toastMsg(e.message)}};reader.readAsText(file)}
 const parseCSV=ForecastIQCore.parseSalesCSV;

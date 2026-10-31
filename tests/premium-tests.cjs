@@ -10,7 +10,7 @@ const dom = new JSDOM(html, { url: 'http://localhost:8765', runScripts: 'outside
 const w = dom.window;
 const errors = [];
 w.addEventListener('error', event => errors.push(event.error));
-w.fetch = async () => ({ ok: true, json: async () => ({ indices: [] }) });
+w.fetch = async () => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ indices: [] }) });
 w.Chart = class {
   constructor(canvas, config) { this.canvas = canvas; this.config = config; }
   destroy() {}

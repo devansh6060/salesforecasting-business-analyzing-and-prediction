@@ -1,6 +1,7 @@
-import { jsonResponse, marketPayload, validateMarketRequest } from './_market-data.mjs';
+import { jsonResponse, marketPayload, validateMarketRequest } from '../lib/market-data.mjs';
+import { httpHandler } from '../lib/http-handler.mjs';
 
-export default async function handler(request) {
+async function handle(request) {
   if (request.method !== 'GET') return jsonResponse({ error: 'Method not allowed.' }, 405);
 
   const url = new URL(request.url);
@@ -17,3 +18,5 @@ export default async function handler(request) {
     return jsonResponse({ error: `Unable to retrieve market data: ${error.message}` }, 502);
   }
 }
+
+export default httpHandler(handle);

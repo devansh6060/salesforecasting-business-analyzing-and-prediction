@@ -3,6 +3,13 @@
   const workspace = document.getElementById('stocks');
   let verified = false;
   let attempted = false;
+  const renderLoadedStocks = renderStocks;
+  renderStocks = function () {
+    if (!verified) return;
+    renderLoadedStocks();
+    if (!currentMarketPayload) chartHeading.textContent = 'Uploaded stock vs benchmark';
+  };
+  stockData = [];
   workspace.classList.add('market-awaiting-data');
   quoteCompany.textContent = 'Search an Indian listed company';
   quoteTicker.textContent = 'NSE / BSE · historical closing prices';
@@ -21,6 +28,11 @@
   const baseFetch = fetchMarketData;
   fetchMarketData = async function () {
     if (fetchMarketBtn.disabled) return;
+    if (!/^[A-Z0-9&-]{1,15}$/.test(stockSymbol.value.trim().toUpperCase().replace(/\.(NS|BO)$/, ''))) {
+      marketStatus.textContent = 'Enter a valid symbol such as RELIANCE, TCS or INFY.';
+      marketStatus.className = 'market-status error';
+      return;
+    }
     attempted = true; verified = false;
     workspace.classList.add('market-awaiting-data');
     currentMarketPayload = null;
@@ -30,39 +42,81 @@
     quotePrevious.textContent = quoteRange.textContent = quoteVolume.textContent = '—';
     quoteTimestamp.textContent = 'Waiting for provider response';
     quoteMarketState.textContent = 'LOADING';
-    await baseFetch();
+    stockPeriod.textContent = 'Waiting for price history';
+    stockFileInput.disabled = true;
+    analyzeStockBtn.disabled = true;
+    try { await baseFetch(); }
+    finally { stockFileInput.disabled = false; analyzeStockBtn.disabled = false; }
     if (!verified) {
       quoteCompany.textContent = 'Market data unavailable';
       quoteTicker.textContent = 'Retry Search when the provider is available';
       quoteMarketState.textContent = 'UNAVAILABLE';
       quoteTimestamp.textContent = 'No verified response';
       marketMeta.textContent = 'The provider did not return valid history. No simulated prices are displayed.';
+      stockPeriod.textContent = 'No market history loaded';
       marketStatus.textContent = marketStatus.textContent.replace('Make sure server.py is running and internet is available.', 'Check the local server and internet connection, then retry.');
     }
   };
   fetchMarketBtn.onclick = fetchMarketData;
   stockResetBtn.textContent = 'Refresh market data';
   stockResetBtn.onclick = fetchMarketData;
-  document.querySelector('.nav[data-view="stocks"]').addEventListener('click', () => { if (!attempted) fetchMarketData(); });
+  document.querySelector('.nav[data-view="stocks"]').addEventListener('click', () => { if (!attempted || !verified) fetchMarketData(); });
+  // Refresh provider prices while this section is visible. Never replace an uploaded CSV.
+  setInterval(() => {
+    if (!document.hidden && workspace.classList.contains('active') && currentMarketPayload && !fetchMarketBtn.disabled) {
+      fetchMarketData();
+      loadIndices();
+    }
+  }, 60000);
+  analyzeStockBtn.onclick = () => {
+    const file = stockFileInput.files[0];
+    if (file) loadStockFile(file);
+    else {
+      marketStatus.textContent = 'Choose a price CSV first, or select Search to load market data.';
+      marketStatus.className = 'market-status error';
+      stockFileInput.click();
+    }
+  };
   loadStockFile = function (file) {
+    if (fetchMarketBtn.disabled) return;
+    // Keep a live request from replacing a file while FileReader is working.
+    fetchMarketBtn.disabled = true;
+    analyzeStockBtn.disabled = true;
     const reader = new FileReader();
+    const finish = () => { fetchMarketBtn.disabled = false; analyzeStockBtn.disabled = false; };
+    reader.onerror = () => {
+      finish();
+      marketStatus.textContent = 'Unable to read this file. Choose the CSV again.';
+      marketStatus.className = 'market-status error';
+    };
     reader.onload = () => {
       try {
         const parsed = parseStockCSV(reader.result);
-        stockData = parsed; currentMarketPayload = null; verified = true;
+        stockData = parsed; currentMarketPayload = null; verified = true; attempted = true;
         workspace.classList.remove('market-awaiting-data');
         quoteCompany.textContent = 'Uploaded comparison data';
         quoteTicker.textContent = 'Your CSV · prices not independently verified';
         quoteExchange.textContent = 'CSV';
-        quotePrice.textContent = '—'; quoteChange.textContent = 'Source: uploaded file';
-        quotePrevious.textContent = quoteRange.textContent = quoteVolume.textContent = '—';
+        quoteHero.className = 'quote-hero';
+        quotePrice.textContent = marketMoney(parsed.at(-1).stock);
+        quotePrevious.textContent = marketMoney(parsed.at(-2).stock);
+        const change = (parsed.at(-1).stock / parsed.at(-2).stock - 1) * 100;
+        quoteChange.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}% · uploaded file`;
+        quoteChange.className = change >= 0 ? 'positive' : 'negative';
+        quoteRange.textContent = quoteVolume.textContent = '—';
         quoteMarketState.textContent = 'UPLOADED'; quoteTimestamp.textContent = `${parsed[0].date} to ${parsed.at(-1).date}`;
         renderStocks();
         marketMeta.textContent = `Uploaded CSV · ${parsed.length} comparison sessions · price fields assumed INR`;
         chartHeading.textContent = 'Uploaded stock vs benchmark';
         marketStatus.textContent = 'Uploaded prices displayed. Select Search to replace them with provider data.';
         marketStatus.className = 'market-status success';
-      } catch (error) { toastMsg(error.message); }
+        document.querySelector('[data-market-tab="overview"]').click();
+        requestAnimationFrame(() => charts.stockChart?.resize?.());
+      } catch (error) {
+        marketStatus.textContent = error.message;
+        marketStatus.className = 'market-status error';
+        toastMsg(error.message);
+      } finally { finish(); }
     };
     reader.readAsText(file);
   };

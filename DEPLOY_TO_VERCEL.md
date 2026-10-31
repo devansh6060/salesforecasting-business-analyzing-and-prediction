@@ -27,6 +27,6 @@ This package contains static website files plus Vercel Functions for `/api/marke
 - Open the generated Vercel URL and use **Continue as Demo Executive**.
 - Open **Forecast Studio** and change a forecast preset.
 - Open **Stock performance**, search for `RELIANCE`, and confirm that live NSE data loads.
-- The market-data provider may occasionally delay or rate-limit responses; the functions cache successful responses at Vercel's edge for five minutes.
+- The market-data provider may occasionally delay or rate-limit responses; successful responses are cached for one minute. Stock prices refresh every minute while the section is visible. Uploaded CSVs are not replaced by automatic refreshes.
 
 Authentication in this academic version is browser-local. For public production use, replace it with server-side authentication and persistent storage.

@@ -126,7 +126,7 @@
     assertUniqueHeaders(headers);
     const dateIndex = headers.indexOf('date');
     const stockIndex = headers.findIndex(value => ['stock', 'close', 'stock_close'].includes(value));
-    const benchmarkIndex = headers.findIndex(value => ['benchmark', 'market', 'index'].includes(value));
+    const benchmarkIndex = headers.findIndex(value => ['benchmark', 'benchmark_close', 'market', 'index'].includes(value));
     if (dateIndex < 0 || stockIndex < 0 || benchmarkIndex < 0) {
       throw new Error('CSV needs date, stock and benchmark columns.');
     }

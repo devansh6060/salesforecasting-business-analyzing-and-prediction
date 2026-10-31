@@ -32,11 +32,13 @@ w.scrollTo = () => {};
 w.print = () => {};
 w.fetch = async url => {
   requests.push(String(url));
-  if (url === '/api/indices') return { ok: true, json: async () => ({ indices: [] }) };
+  if (url === '/api/indices') return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ indices: [] }) };
   assert.match(String(url), /^\/api\/market\?/);
   if (providerState === 'failure') throw new Error('Test provider unavailable');
+  if (providerState === 'server-crash') return { ok: false, status: 500, headers: { get: () => 'text/plain' }, json: async () => { throw new SyntaxError('Unexpected token A'); } };
+  if (providerState === 'invalid-json') return { ok: false, status: 502, headers: { get: () => 'application/json' }, json: async () => { throw new SyntaxError('Unexpected token A'); } };
   assert.ok(fixture, 'A test fixture must be configured before market requests');
-  return { ok: true, json: async () => fixture };
+  return { ok: true, headers: { get: () => 'application/json' }, json: async () => fixture };
 };
 
 async function main() {
@@ -106,6 +108,42 @@ async function main() {
     assert.equal(read('currentMarketPayload.symbol'), fixture.symbol);
     assert.equal(state(), 'CLOSED');
     assert.equal(requests.filter(url => url.startsWith('/api/market')).length, 3);
+
+    for (const failure of ['server-crash', 'invalid-json']) {
+      providerState = failure;
+      await read('fetchMarketData()');
+      assert.equal(state(), 'UNAVAILABLE');
+      assert.match(w.document.getElementById('marketStatus').textContent, /Market service returned HTTP/);
+      assert.doesNotMatch(w.document.getElementById('marketStatus').textContent, /Unexpected token/);
+      assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
+    }
+    providerState = 'success';
+
+    // Files exported by this app must be accepted by the upload parser.
+    const exported = ['date,stock_close,benchmark_close', ...data.map(row => `${row.date},${row.stock},${row.benchmark}`)].join('\n');
+    assert.equal(read(`parseStockCSV(${JSON.stringify(exported)}).length`), data.length);
+
+    // Upload opens the chart and remains selected when returning to Stocks.
+    w.document.querySelector('[data-market-tab="upload"]').click();
+    const uploaded = new w.File([exported], 'comparison.csv', { type: 'text/csv' });
+    w.uploadFixture = uploaded;
+    const finishedUpload = new Promise(resolve => {
+      const observer = new w.MutationObserver(() => {
+        if (state() === 'UPLOADED') { observer.disconnect(); resolve(); }
+      });
+      observer.observe(w.document.getElementById('quoteMarketState'), { childList: true });
+    });
+    read('loadStockFile(uploadFixture)');
+    await finishedUpload;
+    assert.equal(workspace.classList.contains('market-awaiting-data'), false);
+    assert.equal(w.document.getElementById('marketOverview').classList.contains('active'), true);
+    assert.equal(read('currentMarketPayload'), null);
+    assert.equal(read('stockData.length'), data.length);
+    assert.notEqual(w.document.getElementById('quotePrice').textContent, '—');
+    w.document.querySelector('.nav[data-view="stocks"]').click();
+    assert.equal(state(), 'UPLOADED');
+    assert.equal(requests.filter(url => url.startsWith('/api/market')).length, 5);
+    assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
 
     assert.equal(menu.hidden, false);
     assert.equal(menu.closest('.workspace-bar') !== null, true);
