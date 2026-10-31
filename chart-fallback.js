@@ -75,8 +75,9 @@
       const rawMin = Math.min(...values);
       const rawMax = Math.max(...values);
       const margin = Math.max(1, (rawMax - rawMin) * 0.08);
-      const minimum = rawMin >= 0 ? Math.max(0, rawMin - margin) : rawMin - margin;
-      const maximum = rawMax + margin;
+      const bars = this.config.type === 'bar';
+      const minimum = bars ? Math.min(0, rawMin - margin) : rawMin >= 0 ? Math.max(0, rawMin - margin) : rawMin - margin;
+      const maximum = bars ? Math.max(0, rawMax + margin) : rawMax + margin;
       const range = maximum - minimum || 1;
       context.strokeStyle = '#e4e8e5';
       context.fillStyle = '#6f7a82';
@@ -90,7 +91,7 @@
         const value = maximum - range * step / 4;
         context.fillText(String(formatTick(value)), 5, y + 4);
       }
-      const xFor = index => padding.left + (labels.length <= 1 ? 0 : plotWidth * index / (labels.length - 1));
+      const xFor = index => padding.left + (bars ? plotWidth * (index + .5) / labels.length : labels.length <= 1 ? 0 : plotWidth * index / (labels.length - 1));
       const yFor = value => padding.top + plotHeight - (value - minimum) / range * plotHeight;
       this.plot = { padding, plotWidth, labels, datasets, width: size.width, height: size.height };
       const projected = datasets.find(dataset => /forecast|predicted/i.test(dataset.label || ''));
@@ -105,6 +106,17 @@
       }
       datasets.forEach((dataset, datasetIndex) => {
         const color = dataset.borderColor || palette[datasetIndex % palette.length];
+        if (bars) {
+          const groupWidth = plotWidth / Math.max(1, labels.length) * .75;
+          const barWidth = Math.min(34, groupWidth / datasets.length);
+          context.fillStyle = dataset.backgroundColor || color;
+          (dataset.data || []).forEach((value, index) => {
+            if (!Number.isFinite(value)) return;
+            const x = xFor(index) - barWidth * datasets.length / 2 + datasetIndex * barWidth;
+            context.fillRect(x + 1, Math.min(yFor(0), yFor(value)), Math.max(1, barWidth - 2), Math.abs(yFor(value) - yFor(0)));
+          });
+          return;
+        }
         const segments = [];
         let current = [];
         (dataset.data || []).forEach((value, index) => {
@@ -190,7 +202,7 @@
       const { padding, plotWidth, labels, datasets, width } = this.plot;
       const mouseX = (event.clientX - rect.left) / (rect.width || width) * width;
       if (mouseX < padding.left || mouseX > padding.left + plotWidth) { this.canvas.removeAttribute('title'); return; }
-      const index = Math.max(0, Math.min(labels.length - 1, Math.round((mouseX - padding.left) / plotWidth * (labels.length - 1))));
+      const index = Math.max(0, Math.min(labels.length - 1, this.config.type === 'bar' ? Math.floor((mouseX - padding.left) / plotWidth * labels.length) : Math.round((mouseX - padding.left) / plotWidth * (labels.length - 1))));
       const format = this.config.options?.plugins?.tooltip?.callbacks?.label;
       const lines = datasets.filter(dataset => Number.isFinite(dataset.data[index])).map(dataset => format
         ? format({ dataset, parsed: { y: dataset.data[index] }, label: labels[index] })

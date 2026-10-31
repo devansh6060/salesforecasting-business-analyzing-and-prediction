@@ -14,15 +14,18 @@
     return new Date(`${value}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   }
   function configure(id, type, data, overrides = {}) {
-    const indexed = id === 'stockChart';
-    const overview = ['salesChart', 'categoryChart'].includes(id) && root.ForecastIQOverviewCurrency;
-    const code = overview ? 'USD' : currencyCode();
+    const { valueFormat, currency: selectedCurrency, axisTitle, ...chartOverrides } = overrides;
+    const percentage = valueFormat === 'percent' || ['stockDrawdownChart', 'stockMonthlyReturnsChart'].includes(id);
+    const indexed = id === 'stockChart' && !percentage && valueFormat !== 'currency';
+    const overview = ['salesChart', 'categoryChart', 'monthlySalesChart', 'weekdaySalesChart'].includes(id) && root.ForecastIQOverviewCurrency;
+    const code = overview ? 'USD' : selectedCurrency || currencyCode();
     const displayMoney = (value, compact = false) => currency(value, compact, code);
     const datasets = data.datasets.map((dataset, index) => ({
       ...dataset,
       ...(overview ? { data: dataset.data.map(value => Number.isFinite(value) ? overview.convert(value) : value) } : {}),
       ...(type === 'doughnut' ? { backgroundColor: palette, borderColor: '#fff', borderWidth: 3, hoverOffset: 5 } : {
-        borderColor: palette[index % palette.length], backgroundColor: index ? '#668bb20a' : '#227d6c0b',
+        borderColor: dataset.borderColor || palette[index % palette.length], backgroundColor: dataset.backgroundColor || (type === 'bar' ? palette[index % palette.length] + 'bb' : index ? '#668bb20a' : '#227d6c0b'),
+        ...(type === 'bar' ? { borderRadius: 4, maxBarThickness: 34 } : {}),
         borderWidth: 2, tension: 0, pointRadius: 0, pointHoverRadius: 4, pointHitRadius: 12,
         borderDash: /forecast|predicted/i.test(dataset.label || '') ? [5, 4] : (dataset.borderDash || []),
         fill: dataset.fill || false, spanGaps: false
@@ -43,16 +46,17 @@
               const total = context.dataset.data.reduce((sum, item) => sum + (Number.isFinite(item) ? item : 0), 0);
               return `${context.label}: ${displayMoney(value)} (${total ? (value / total * 100).toFixed(1) : '0'}%)`;
             }
-            return `${context.dataset.label}: ${indexed ? Number(value).toFixed(2) + ' index points' : displayMoney(value)}`;
+            return `${context.dataset.label}: ${percentage ? (value > 0 ? '+' : '') + value.toFixed(2) + '%' : indexed ? Number(value).toFixed(2) + ' index points' : displayMoney(value)}`;
           } }
         }
       },
       scales: type === 'doughnut' ? {} : {
         x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 7, maxRotation: 0, color: '#81919a', font: { size: 10 }, callback(value) { return dateLabel(this.getLabelForValue(value)); } } },
-        y: { beginAtZero: !indexed, grace: '8%', border: { display: false }, grid: { color: '#edf1f3', drawTicks: false }, title: { display: true, text: indexed ? 'Indexed performance · first day = 100' : `Daily revenue · ${code}`, color: '#81919a', font: { size: 10 } }, ticks: { maxTicksLimit: 5, padding: 10, color: '#81919a', font: { size: 10 }, callback: value => indexed ? Number(value).toFixed(0) : displayMoney(value, true) } }
+        y: { beginAtZero: type === 'bar' || (!indexed && !percentage && id !== 'stockChart'), grace: '8%', border: { display: false }, grid: { color: '#edf1f3', drawTicks: false }, title: { display: true, text: axisTitle || (percentage ? 'Return (%)' : indexed ? 'Indexed performance · first day = 100' : `Daily revenue · ${code}`), color: '#81919a', font: { size: 10 } }, ticks: { maxTicksLimit: 5, padding: 10, color: '#81919a', font: { size: 10 }, callback: value => percentage ? Number(value).toFixed(1) + '%' : indexed ? Number(value).toFixed(0) : displayMoney(value, true) } }
       }
     };
-    const options = { ...defaults, ...overrides, plugins: { ...defaults.plugins, ...overrides.plugins }, scales: overrides.scales || defaults.scales };
+    if (id === 'stockDrawdownChart') defaults.scales.y.max = 0;
+    const options = { ...defaults, ...chartOverrides, plugins: { ...defaults.plugins, ...chartOverrides.plugins }, scales: chartOverrides.scales || defaults.scales };
     if (type === 'doughnut') options.cutout = overrides.cutout || '74%';
     // A visible boundary separates observed values from estimates without inventing a confidence band.
     const forecastBoundary = {
@@ -76,7 +80,17 @@
         ctx.restore();
       }
     };
-    return { type, data: { ...data, datasets }, options, plugins: [forecastBoundary] };
+    const focusLine = {
+      id: 'focusLine', afterDatasetsDraw(chart) {
+        if (type !== 'line') return;
+        const point = chart.getActiveElements?.()[0]?.element;
+        if (!point || !chart.chartArea) return;
+        const { ctx, chartArea } = chart;
+        ctx.save(); ctx.strokeStyle = '#b4c5cb'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(point.x, chartArea.top); ctx.lineTo(point.x, chartArea.bottom); ctx.stroke(); ctx.restore();
+      }
+    };
+    return { type, data: { ...data, datasets }, options, plugins: [forecastBoundary, focusLine] };
   }
   root.ForecastIQChartOptions = configure;
   if (typeof module !== 'undefined') module.exports = configure;

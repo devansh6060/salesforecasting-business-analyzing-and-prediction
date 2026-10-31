@@ -19,7 +19,7 @@ w.Chart = class {
 w.print = () => {};
 w.scrollTo = () => {};
 async function main() { try {
-  for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'overview-currency.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
+  for (const name of ['core.js', 'graph-data.js', 'samples/uci-retail.js', 'chart-options.js', 'overview-currency.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js', 'graph-enhancements.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), dom.getInternalVMContext(), { filename: name });
   }
   assert.deepEqual(errors, []);
@@ -38,6 +38,18 @@ async function main() { try {
   assert.equal(read('rows.at(-1).sales'), w.ForecastIQPublicData.rows.at(-1).sales);
   assert.equal(read('charts.salesChart.config.data.datasets[0].data.at(0)'), read('rows.slice(-45)[0].sales * 1.25'));
   assert.match(read('charts.salesChart.config.options.scales.y.title.text'), /USD/);
+  assert.equal(read('charts.salesChart.config.data.datasets.length'), 3);
+  assert.equal(read('charts.salesChart.config.data.datasets[2].data[5]'), null);
+  assert.equal(read('charts.salesChart.config.data.datasets[2].data[6]'), read('rows.slice(-45,-38).reduce((sum,row)=>sum+row.sales,0)/7*1.25'));
+  assert.equal(read('charts.monthlySalesChart.config.data.datasets[0].data.reduce((a,b)=>a+b,0)').toFixed(2), read('metrics().total*1.25').toFixed(2));
+  assert.equal(read('charts.weekdaySalesChart.config.data.labels.length'), 7);
+  w.document.querySelector('[data-sales-window="90"]').click();
+  assert.equal(read('charts.salesChart.config.data.datasets[0].data.filter(Number.isFinite).length'), 90);
+  w.document.querySelector('[data-sales-window="45"]').click();
+  const averageToggle = w.document.getElementById('salesAverageToggle');
+  averageToggle.checked = false; averageToggle.dispatchEvent(new w.Event('change'));
+  assert.equal(read('charts.salesChart.config.data.datasets.length'), 2);
+  averageToggle.checked = true; averageToggle.dispatchEvent(new w.Event('change'));
   assert.match(w.document.getElementById('reportContent').textContent, /Historical observed sales/);
   const menu = w.document.getElementById('workspaceNavigation');
   const main = w.document.querySelector('main');

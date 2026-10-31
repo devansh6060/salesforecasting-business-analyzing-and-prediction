@@ -1,0 +1,11 @@
+.analytics-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0 0 22px}
+.analytics-chart-card{min-width:0;padding:22px}.analytics-chart-card .panel-head{align-items:flex-start;margin-bottom:14px}.analytics-chart-card h3{font-size:16px;line-height:1.4}.analytics-chart-card .panel-head p{font-size:9px;letter-spacing:1.2px}
+.analytics-canvas{position:relative;height:270px;min-width:0}.analytics-canvas canvas{width:100%!important;height:100%!important;max-height:none!important}
+.graph-badge{color:#397362;background:#edf5f0;border:1px solid #dceae2;border-radius:20px;padding:5px 9px;font-size:10px;white-space:nowrap}
+.graph-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 0;border-top:1px solid #edf1f3;border-bottom:1px solid #edf1f3}
+.graph-segments{display:flex;gap:4px}.graph-segments button{padding:6px 10px;border:0;background:transparent;border-radius:6px;color:#6a808c;font-size:11px;box-shadow:none}.graph-segments button[aria-pressed=true]{background:#e6f1ec;color:#176c61;font-weight:600}
+.graph-tools label{display:flex;align-items:center;gap:7px;font-size:11px;color:#647983}.graph-tools input[type=checkbox]{width:14px;height:14px;accent-color:#227d6c;margin:0}.graph-tools select{width:auto;padding:6px 28px 6px 10px;font-size:11px;min-height:30px}
+.graph-summary{display:flex;gap:20px;flex-wrap:wrap;padding:8px 0 10px;color:#6c818b;font-size:11px}.graph-summary strong{font-variant-numeric:tabular-nums;color:#21453e;margin-left:6px}.graph-summary .negative{color:#ae5656}.graph-summary .positive{color:#247d62}
+.market-awaiting-data .market-detail-charts{display:none}.market-detail-charts{margin-top:18px}.analytics-chart-card .chart-caption{margin:12px 0 0;font-size:10px;line-height:1.7}
+.market-awaiting-data #stockGraphSummary{visibility:hidden}
+@media(max-width:760px){.analytics-chart-grid{grid-template-columns:1fr;gap:14px}.analytics-chart-card{padding:17px}.analytics-canvas{height:250px}.graph-tools{gap:10px}.graph-tools label{font-size:10px}.graph-summary{gap:12px;font-size:10px}}

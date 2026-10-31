@@ -90,7 +90,7 @@
     document.querySelector('.operations-panel .panel-head p').textContent = 'DEMO OPERATING ASSUMPTIONS';
     document.querySelector('.channel-mix').closest('article').querySelector('.panel-head p').textContent = 'DEMO CHANNEL MIX';
     document.querySelector('.journey-step small').textContent = `${rows.length} records loaded`;
-    caption.textContent = `${real ? 'UCI observed transactions' : imported ? 'Uploaded CSV' : 'Synthetic demo'} · ${rows.length} calendar records (${rows[0].date} to ${rows.at(-1).date}). Latest ${Math.min(45, rows.length)} observed days + dashed 30-day projection. ${methodNames[model]}. Display currency: USD.`;
+    caption.textContent = `${real ? 'UCI observed transactions' : imported ? 'Uploaded CSV' : 'Synthetic demo'} · ${rows.length} calendar records (${rows[0].date} to ${rows.at(-1).date}). Latest ${Math.min(globalThis.ForecastIQSalesWindow || 45, rows.length)} observed days + dashed 30-day projection. ${methodNames[model]}. Display currency: USD.`;
     document.querySelector('#categoryChart').parentElement.querySelector('h3').textContent = real ? 'Sales by destination market' : 'Revenue contribution';
     document.querySelector('#categoryChart').parentElement.querySelector('.panel-head p').textContent = real ? 'MARKET MIX' : 'CATEGORY MIX';
     categoryCaption.textContent = real ? 'Destination country from the source transactions, across the full selected history. Small markets grouped as Other.' : 'Share of revenue across the full selected history. Exact source records are available in Data manager.';

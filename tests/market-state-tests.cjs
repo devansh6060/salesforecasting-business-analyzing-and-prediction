@@ -44,7 +44,7 @@ w.fetch = async url => {
 
 async function main() {
   try {
-    for (const name of ['core.js', 'samples/uci-retail.js', 'chart-options.js', 'overview-currency.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js']) {
+    for (const name of ['core.js', 'graph-data.js', 'samples/uci-retail.js', 'chart-options.js', 'overview-currency.js', 'app.js', 'auth.js', 'enhancements.js', 'market-ui.js', 'forecast-studio.js', 'premium.js', 'navigation.js', 'market-data-state.js', 'graph-enhancements.js']) {
       vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), context, { filename: name });
     }
     const workspace = w.document.getElementById('stocks');
@@ -86,6 +86,17 @@ async function main() {
     assert.match(w.document.getElementById('marketStatus').textContent, /real trading sessions/);
     assert.equal(read('charts.stockChart.config.data.datasets[0].data.at(-1)'), data.at(-1).stock / data[0].stock * 100);
     assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
+    assert.equal(read('charts.stockDrawdownChart.config.data.datasets[0].data[0]'), 0);
+    assert.ok(read('charts.stockDrawdownChart.config.data.datasets[0].data.every(value=>value<=0)'));
+    const chartView = w.document.getElementById('stockChartView');
+    chartView.value = 'return'; chartView.dispatchEvent(new w.Event('change'));
+    assert.equal(read('charts.stockChart.config.data.datasets[0].data[0]'), 0);
+    assert.match(read("charts.stockChart.config.options.plugins.tooltip.callbacks.label({dataset:{label:'Stock'},parsed:{y:5}})"), /5.00%/);
+    chartView.value = 'price'; chartView.dispatchEvent(new w.Event('change'));
+    assert.equal(read('charts.stockChart.config.data.datasets.length'), 1);
+    assert.equal(read('charts.stockChart.config.data.datasets[0].data.at(-1)'), data.at(-1).stock);
+    assert.match(read("charts.stockChart.config.options.plugins.tooltip.callbacks.label({dataset:{label:'Stock'},parsed:{y:100}})"), /₹/);
+    chartView.value = 'indexed'; chartView.dispatchEvent(new w.Event('change'));
 
     // A provider error must conceal the previous prices and clear verified metadata.
     providerState = 'failure';
@@ -140,6 +151,7 @@ async function main() {
     assert.equal(w.document.getElementById('marketOverview').classList.contains('active'), true);
     assert.equal(read('currentMarketPayload'), null);
     assert.equal(read('stockData.length'), data.length);
+    assert.equal(read('charts.stockDrawdownChart.config.data.datasets[0].label'), 'Uploaded stock');
     assert.notEqual(w.document.getElementById('quotePrice').textContent, '—');
     w.document.querySelector('.nav[data-view="stocks"]').click();
     assert.equal(state(), 'UPLOADED');
