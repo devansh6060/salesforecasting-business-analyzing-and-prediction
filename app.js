@@ -22,7 +22,12 @@ async function marketJSON(url) {
     if (location.protocol === 'file:') throw Error('Open http://localhost:8765 using START_FORECASTIQ.bat to load market data');
     const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
     const type = response.headers.get('content-type') || '';
-    const unavailable = 'Market service returned HTTP ' + response.status + '. Please retry. If this continues, the website deployment needs updating.';
+    const localHost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+    const unavailable = response.status === 404 || response.status === 405
+      ? localHost
+        ? 'Live stock prices need the project server. Run START_FORECASTIQ.bat, then open http://localhost:8765 (VS Code Live Server only serves the static pages).'
+        : 'Live stock prices need the /api/market backend. Deploy the complete project to Vercel or run START_FORECASTIQ.bat locally; static hosting cannot run the market API.'
+      : 'Market service returned HTTP ' + response.status + '. Please retry. If this continues, the website deployment needs updating.';
     if (!type.includes('application/json')) throw Error(unavailable);
     let payload;
     try { payload = await response.json(); } catch { throw Error(unavailable); }

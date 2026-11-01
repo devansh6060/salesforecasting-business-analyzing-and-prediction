@@ -24,6 +24,8 @@ This package contains static website files plus Vercel Functions for `/api/marke
 
 ## Verify after deployment
 
+When updating `salesforecasting-business-analyzing.vercel.app`, link the CLI to the existing **salesforecasting-business-analyzing** project. Local edits do not update the deployed website until a new production deployment succeeds. If deploying through GitHub, commit and push the changed files to the connected production branch first; redeploying an older commit will not include the fixes.
+
 - Open the generated Vercel URL and use **Continue as Demo Executive**.
 - Open **Forecast Studio** and change a forecast preset.
 - Open **Stock performance**, search for `RELIANCE`, and confirm that live NSE data loads.

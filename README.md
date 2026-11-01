@@ -10,6 +10,8 @@ ForecastIQ is a browser-based college macro project that accepts historical sale
 
 Opening `index.html` directly also works for sales analysis and uploaded stock CSVs. Chart.js is bundled locally, with a canvas fallback if it is unavailable. Live web-market retrieval requires the local server.
 
+If **Stock performance** cannot retrieve prices, open the project with `START_FORECASTIQ.bat` and use `http://localhost:8765`. VS Code Live Server and GitHub Pages serve static files only and cannot run `/api/market`. For a hosted version with live prices, deploy the complete project to Vercel using `DEPLOY_TO_VERCEL.md`. You can still analyze `sample_stock_performance.csv` through the upload tab without a market connection.
+
 ## Features
 
 - Executive overview with measured holdout error, priority signals and dataset context

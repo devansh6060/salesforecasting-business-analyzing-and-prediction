@@ -36,6 +36,7 @@ w.fetch = async url => {
   if (url === '/api/indices') return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ indices: [] }) };
   assert.match(String(url), /^\/api\/market\?/);
   if (providerState === 'failure') throw new Error('Test provider unavailable');
+  if (providerState === 'static-server') return { ok: false, status: 404, headers: { get: () => 'text/html' } };
   if (providerState === 'server-crash') return { ok: false, status: 500, headers: { get: () => 'text/plain' }, json: async () => { throw new SyntaxError('Unexpected token A'); } };
   if (providerState === 'invalid-json') return { ok: false, status: 502, headers: { get: () => 'application/json' }, json: async () => { throw new SyntaxError('Unexpected token A'); } };
   assert.ok(fixture, 'A test fixture must be configured before market requests');
@@ -132,6 +133,14 @@ async function main() {
     providerState = 'success';
 
     // Files exported by this app must be accepted by the upload parser.
+    providerState = 'static-server';
+    await read('fetchMarketData()');
+    assert.equal(state(), 'UNAVAILABLE');
+    assert.match(w.document.getElementById('marketStatus').textContent, /START_FORECASTIQ\.bat/);
+    assert.match(w.document.getElementById('marketStatus').textContent, /http:\/\/localhost:8765/);
+    assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
+    providerState = 'success';
+
     const exported = ['date,stock_close,benchmark_close', ...data.map(row => `${row.date},${row.stock},${row.benchmark}`)].join('\n');
     assert.equal(read(`parseStockCSV(${JSON.stringify(exported)}).length`), data.length);
 
@@ -155,7 +164,7 @@ async function main() {
     assert.notEqual(w.document.getElementById('quotePrice').textContent, '—');
     w.document.querySelector('.nav[data-view="stocks"]').click();
     assert.equal(state(), 'UPLOADED');
-    assert.equal(requests.filter(url => url.startsWith('/api/market')).length, 5);
+    assert.equal(requests.filter(url => url.startsWith('/api/market')).length, 6);
     assert.equal(w.document.getElementById('fetchMarketBtn').disabled, false);
 
     assert.equal(menu.hidden, false);
@@ -166,6 +175,29 @@ async function main() {
     assert.equal(menu.hidden, false, 'Page selection leaves top navigation visible');
     assert.equal(w.document.getElementById('report').classList.contains('active'), true);
     assert.equal(w.document.querySelector('.nav[data-view="report"]').getAttribute('aria-current'), 'page');
+
+    // Selecting TCS while the initial company is loading must not lose the search.
+    const normalFetch = w.fetch;
+    let releaseFirst;
+    const firstResponse = new Promise(resolve => { releaseFirst = resolve; });
+    let firstMarket = true;
+    w.fetch = async url => {
+      if (!String(url).startsWith('/api/market?')) return normalFetch(url);
+      if (firstMarket) { firstMarket = false; await firstResponse; }
+      const symbol = new URL(url, 'http://localhost').searchParams.get('symbol');
+      return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ ...fixture, symbol, stockName: symbol === 'TCS.NS' ? 'Tata Consultancy Services Limited' : fixture.stockName }) };
+    };
+    w.document.getElementById('stockSymbol').value = 'RELIANCE';
+    const initialSearch = read('fetchMarketData()');
+    w.document.querySelector('[data-stock="TCS"]').click();
+    releaseFirst();
+    await initialSearch;
+    assert.equal(read('currentMarketPayload.symbol'), 'TCS.NS');
+    assert.equal(w.document.getElementById('stockSymbol').value, 'TCS');
+    assert.equal(w.document.getElementById('quoteCompany').textContent, 'Tata Consultancy Services Limited');
+    assert.equal(workspace.classList.contains('market-awaiting-data'), false);
+    assert.equal(w.document.getElementById('stockSearchResults').classList.contains('open'), false);
+    w.fetch = normalFetch;
     assert.deepEqual(errors, []);
     console.log('Market awaiting, loading, provider success, failure, recovery and navigation checks passed.');
   } finally {

@@ -52,6 +52,21 @@ try {
   assert.equal(market.payload.stockName, 'Provider fixture');
   assert.equal(market.payload.quote.price, 150, 'Use the current provider quote rather than the historical series close');
   assert.equal((await invokeNode(indicesHandler, '/api/indices')).payload.indices.length, 4);
+  const fixtureFetch = globalThis.fetch;
+  const hosts = [];
+  globalThis.fetch = async url => {
+    hosts.push(new URL(url).hostname);
+    if (new URL(url).hostname === 'query1.finance.yahoo.com') throw new TypeError('fetch failed');
+    return fixtureFetch();
+  };
+  const retried = await invokeNode(marketHandler, '/api/market?symbol=TCS.NS');
+  assert.equal(retried.status, 200);
+  assert.equal(retried.payload.data.length, 25);
+  assert.ok(hosts.includes('query2.finance.yahoo.com'));
+  globalThis.fetch = async () => { throw new TypeError('fetch failed'); };
+  const disconnected = await invokeNode(marketHandler, '/api/market?symbol=TCS.NS');
+  assert.equal(disconnected.status, 502);
+  assert.match(disconnected.payload.error, /Cannot connect to Yahoo Finance/);
   globalThis.fetch = async () => { throw Error('Provider offline'); };
   const offline = await invokeNode(marketHandler, '/api/market?symbol=TCS.NS');
   assert.equal(offline.status, 502);

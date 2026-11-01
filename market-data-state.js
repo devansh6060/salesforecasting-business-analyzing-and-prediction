@@ -3,6 +3,8 @@
   const workspace = document.getElementById('stocks');
   let verified = false;
   let attempted = false;
+  let fetching = false;
+  let pendingSearch = null;
   const renderLoadedStocks = renderStocks;
   renderStocks = function () {
     if (!verified) return;
@@ -27,12 +29,18 @@
   };
   const baseFetch = fetchMarketData;
   fetchMarketData = async function () {
+    if (fetching) {
+      pendingSearch = { symbol: stockSymbol.value, exchange: stockExchange.value, benchmark: benchmarkSymbol.value, range: stockRange.value };
+      return;
+    }
     if (fetchMarketBtn.disabled) return;
     if (!/^[A-Z0-9&-]{1,15}$/.test(stockSymbol.value.trim().toUpperCase().replace(/\.(NS|BO)$/, ''))) {
       marketStatus.textContent = 'Enter a valid symbol such as RELIANCE, TCS or INFY.';
       marketStatus.className = 'market-status error';
       return;
     }
+    fetching = true;
+    stockSearchResults.classList.remove('open');
     attempted = true; verified = false;
     workspace.classList.add('market-awaiting-data');
     currentMarketPayload = null;
@@ -46,7 +54,7 @@
     stockFileInput.disabled = true;
     analyzeStockBtn.disabled = true;
     try { await baseFetch(); }
-    finally { stockFileInput.disabled = false; analyzeStockBtn.disabled = false; }
+    finally { fetching = false; stockFileInput.disabled = false; analyzeStockBtn.disabled = false; }
     if (!verified) {
       quoteCompany.textContent = 'Market data unavailable';
       quoteTicker.textContent = 'Retry Search when the provider is available';
@@ -55,6 +63,15 @@
       marketMeta.textContent = 'The provider did not return valid history. No simulated prices are displayed.';
       stockPeriod.textContent = 'No market history loaded';
       marketStatus.textContent = marketStatus.textContent.replace('Make sure server.py is running and internet is available.', 'Check the local server and internet connection, then retry.');
+    }
+    if (pendingSearch) {
+      const next = pendingSearch;
+      pendingSearch = null;
+      stockSymbol.value = next.symbol;
+      stockExchange.value = next.exchange;
+      benchmarkSymbol.value = next.benchmark;
+      stockRange.value = next.range;
+      await fetchMarketData();
     }
   };
   fetchMarketBtn.onclick = fetchMarketData;
